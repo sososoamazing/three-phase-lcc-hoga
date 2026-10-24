@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 三相 LCC 的 HOGA 实现：事件增强移动 Fourier 周期稳态 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#3-1-为什么不是直接套论文的线性平衡方程">3.1 为什么不是直接套论文的线性平衡方程</a><a class="lvl2" href="#3-2-未知量与事件-schedule">3.2 未知量与事件 schedule</a><a class="lvl3" href="#3-2-1-电流的-fourier-表示">3.2.1 电流的 Fourier 表示</a><a class="lvl3" href="#3-2-2-事件-schedule">3.2.2 事件 schedule</a><a class="lvl3" href="#3-2-3-非线性未知量">3.2.3 非线性未知量</a><a class="lvl2" href="#3-3-事件残差">3.3 事件残差</a><a class="lvl3" href="#a-周期闭合">(a) 周期闭合</a><a class="lvl3" href="#b-活动面电压约束">(b) 活动面电压约束</a><a class="lvl3" href="#c-释放-互补条件">(c) 释放/互补条件</a><a class="lvl2" href="#3-4-给定事件后的线性消元">3.4 给定事件后的线性消元</a><a class="lvl2" href="#3-5-求解流程">3.5 求解流程</a><a class="lvl2" href="#3-6-物理守卫">3.6 物理守卫</a><a class="lvl2" href="#3-7-验收层级">3.7 验收层级</a><a class="lvl3" href="#第一层-代数-事件-物理守卫">第一层：代数/事件 + 物理守卫</a><a class="lvl3" href="#第二层-阶数收敛">第二层：阶数收敛</a><a class="lvl3" href="#第三层-独立参考">第三层：独立参考</a><a class="lvl2" href="#3-8-h49-版本">3.8 H49 版本</a><a class="lvl2" href="#3-9-已知数值限制">3.9 已知数值限制</a><a class="lvl2" href="#3-10-代码地图">3.10 代码地图</a><a class="lvl2" href="#3-11-最小调用示例">3.11 最小调用示例</a><a class="lvl2" href="#3-12-来源">3.12 来源</a></aside>
+<article class="content">
+<h1 id="03-三相-lcc-的-hoga-实现-事件增强移动-fourier-周期稳态">03 三相 LCC 的 HOGA 实现：事件增强移动 Fourier 周期稳态</h1>
+<blockquote>对应代码：<code>code/matlab/core/lcc3v2Hoga.m</code>（审计版 V2.3）、<code>code/matlab/accelerated/studyHoga.m</code>（向量化等价版）、<code>code/matlab/h49/h49Solve.m</code>（固定 H=49 版）。对应报告：<code>reports/audit/HOGA_Audit_Report.md</code>、<code>reports/comparison/HOGA_EDF_FHA_Accuracy_Analysis.md</code> 第 1.3 节。</blockquote>
+<h2 id="3-1-为什么不是直接套论文的线性平衡方程">3.1 为什么不是直接套论文的线性平衡方程</h2>
+<p>论文第 III 节的稳态做法是：给定开关信号的移动 Fourier 系数 <code>&lt;s&gt;</code>，解线性平衡方程得到 <code>&lt;x&gt;</code>。这对 PWM/PSM/PFM 的<strong>已知开关时刻</strong>很有效。</p>
+<p>三相 LCC 的困难在于：</p>
+<ol>
+<li>六个二极管的事件时刻由<strong>状态轨迹</strong>决定，不是预先给定的占空比；</li>
+<li>整流桥有六张面（六种导通对），还允许三管重叠和全截止；</li>
+<li>事件时刻与电流谐波、二次侧 DC 电压必须<strong>同时</strong>满足周期闭合、触边/释放和谱方程；</li>
+<li>如果只把电流截断到有限阶，电压在门控跳变处的导数不连续，强形式 KVL 不可能逐点成立。</li>
+</ol>
+<p>因此本项目采用 <strong>event-enriched moving-Fourier equilibrium</strong>：</p>
+<ul>
+<li>电流 <code>q(t)</code> 用有限复 Fourier 级数表示（<code>±1…±H</code>，DC 为零）；</li>
+<li>二次侧电压 <code>e(t)</code> 不用有限阶截断，而是在每个导通区间内<strong>精确分段积分</strong>；</li>
+<li>二极管事件时刻 <code>τ_k</code> 和二次侧 DC 电压作为非线性未知量；</li>
+<li>电流系数在给定事件 schedule 下由线性方程消元；</li>
+<li>用 <code>lsqnonlin</code> 解事件残差 + 触边/释放 + 周期闭合。</li>
+</ul>
+<p>这就是“事件增强”的含义：<strong>不是把所有波形都截断到 H 阶，而是让整流电压保留分段精确结构，只对谐振电流做 Fourier 截断。</strong></p>
+<h2 id="3-2-未知量与事件-schedule">3.2 未知量与事件 schedule</h2>
+<h3 id="3-2-1-电流的-fourier-表示">3.2.1 电流的 Fourier 表示</h3>
+<pre class="code"><code class="language-text">i(τ) = Σ_{h=-H, h≠0}^{H} I_h e^{jhωτ},   I_{-h} = conj(I_h)</code></pre>
+<p><code>q</code> 的两个 α/β 坐标各有 <code>2H</code> 个复系数。DC 电流系数 <code>I_0 = 0</code>，由串联电容的周期条件给出，不是未知量。因此电流侧有 <code>4H</code> 个实未知（每个复系数实部/虚部）。</p>
+<h3 id="3-2-2-事件-schedule">3.2.2 事件 schedule</h3>
+<p>门控边沿固定在 <code>τ = 0, 1/6, 2/6, 3/6, 4/6, 5/6, 1</code>。二极管事件位于这些门控边沿之间，数量 <code>Ne</code> 取决于导通模式（两管、三管、全截止）。事件 schedule 由 <code>lcc3v2Discover</code> 从 legacy 有限阶候选的拓扑中提取，或者由上一个 HOGA 解延续。</p>
+<h3 id="3-2-3-非线性未知量">3.2.3 非线性未知量</h3>
+<pre class="code"><code class="language-text">v = [ e0_α/Vd, e0_β/Vd, τ_1, ..., τ_Ne ]</code></pre>
+<ul>
+<li><code>e0</code> 是二次侧电压在周期起点的 α/β 分量，缩放到 <code>[-2, 2]</code>；</li>
+<li><code>τ_k</code> 被限制在相邻门控边沿/相邻事件的中点之间，防止事件穿越或合并。</li>
+</ul>
+<p>所以非线性维度只有 <code>2 + Ne</code>，而不是“所有谐波系数”。这是该方法能在几十阶下仍然可解的关键。</p>
+<h2 id="3-3-事件残差">3.3 事件残差</h2>
+<p>对给定 <code>v</code>：</p>
+<ol>
+<li>由 <code>τ_k</code> 和门控边沿构造完整区间边界 <code>ed = sort([0, τ, gateEdges, 1])</code>；</li>
+<li>每个区间有一个活动面集合 <code>ms{s}</code>（哪些二极管对导通）；</li>
+<li>用区间投影矩阵把电流映射到二次侧电压；</li>
+<li>计算残差。</li>
+</ol>
+<p>残差由三部分组成：</p>
+<h3 id="a-周期闭合">(a) 周期闭合</h3>
+<pre class="code"><code class="language-text">r_period = Δe / Vd</code></pre>
+<p><code>Δe</code> 是一个周期内二次侧电压的净变化。周期稳态要求它为零。</p>
+<h3 id="b-活动面电压约束">(b) 活动面电压约束</h3>
+<p>在每个区间的起点，活动的二极管对必须把对应线电压钳在 <code>Vd</code>：</p>
+<pre class="code"><code class="language-text">r_face = (A_active * e(τ_s) - Vd) / Vd</code></pre>
+<p><code>A_active</code> 的行是 <code>U_a - U_b</code>。这些方程保证“导通的二极管对确实承受 <code>Vd</code>”。</p>
+<h3 id="c-释放-互补条件">(c) 释放/互补条件</h3>
+<p>当某个面在事件处被“丢掉”（从活动集移除）时，它必须要么：</p>
+<ul>
+<li>在电压事件处由另一个面接替；或</li>
+<li>其有符号反作用电流为零（释放到内部）。</li>
+</ul>
+<p>代码用最小二乘求 Lagrange 乘子 <code>λ</code>，把 <code>λ_removed</code> 归一化后加入残差。这样防止“解出一个电压满足、但二极管电流为负”的非物理候选。</p>
+<blockquote>这就是为什么“谱残差很小”不等于“物理解”：legacy 在 400 V/H31 的谱残差约 <code>6.53e-11 V</code>，但法锥偏差约 5.65 V、功率偏差 2.185%，被物理守卫拒绝。V2.3 的事件增强表示解决了这一类弱谱闭合不足。</blockquote>
+<h2 id="3-4-给定事件后的线性消元">3.4 给定事件后的线性消元</h2>
+<p>对每个区间 <code>s</code>，活动面矩阵 <code>A_s</code>，定义投影：</p>
+<pre class="code"><code class="language-text">T_s = I - A_s^T (A_s A_s^T)^{-1} A_s</code></pre>
+<p><code>T_s</code> 把二次侧电压投影到“不违反活动面约束”的子空间。于是：</p>
+<ul>
+<li>二次侧电压导数：<code>de/dτ = Kf^T T_s i</code>；</li>
+<li>二极管电流：<code>j = C (I - T_s) i / (3n)</code>；</li>
+<li><code>Kf = n C^T / (3 Cp)</code>。</li>
+</ul>
+<p>把每个区间的 <code>T_s</code> 和区间 Fourier 积分系数代入，得到电流系数 <code>I</code> 的线性方程：</p>
+<pre class="code"><code class="language-text">L(event) I = f</code></pre>
+<p>其中 <code>L</code> 包含 <code>j h ω Ls</code>、<code>1/(j h ω Cs)</code>、共享 <code>Rin</code> 的 Toeplitz 卷积、以及 <code>C e/(3n)</code> 的耦合。给定事件 schedule，<code>I</code> 可以<strong>直接线性求解</strong>，不需要迭代。</p>
+<p>求出 <code>I</code> 后，二次侧电压的 DC 分量和周期闭合量也可以由区间积分得到。于是非线性残差只依赖 <code>e0</code> 和事件时刻。</p>
+<h2 id="3-5-求解流程">3.5 求解流程</h2>
+<pre class="code"><code class="language-text">输入: p (参数), Vo, H, seed (可选)
+  │
+  ├─ 若没有 seed:
+  │    legacy 有限阶 (min(H,7)) 求候选
+  │    lcc3v2Discover 提取事件 schedule
+  │    用候选的 e0 作为初值
+  │
+  ├─ 构造事件边界、活动面集合
+  ├─ 构造区间投影 T_s、Fourier 积分系数
+  ├─ lsqnonlin 解 [e0/Vd, τ_k]
+  │    残差 = 周期闭合 + 活动面电压 + 释放条件
+  │
+  ├─ 线性回代求电流系数 I
+  ├─ 重构 8192 点波形 (τ = (j+0.371)/N)
+  ├─ 计算 Io、RMS、峰值、Cp 峰值、功率、二极管最小电流
+  ├─ 物理守卫
+  └─ 输出 result (含 event_schedule、coeff、metric、wave)</code></pre>
+<p>重构点数：</p>
+<pre class="code"><code class="language-text">N = max(8192, 64*(2H+1))</code></pre>
+<p>峰值不是用 <code>√2·RMS</code> 或基波幅值代替，而是在重构波形上逐相取极值，再做局部细化。</p>
+<h2 id="3-6-物理守卫">3.6 物理守卫</h2>
+<p><code>lcc3v2Hoga.m</code> 的 <code>physical_guard_pass</code> 要求：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">守卫</th>
+<th class="align-right">阈值</th>
+<th class="align-left">含义</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">代数残差 <code>norm(rr,inf)</code></td>
+<td class="align-right"><code>&lt; 1e-9</code></td>
+<td class="align-left">事件方程收敛</td>
+</tr>
+<tr>
+<td class="align-left">二极管电压违约</td>
+<td class="align-right"><code>≤ 1e-3 * Vd</code></td>
+<td class="align-left">没有超过钳位</td>
+</tr>
+<tr>
+<td class="align-left">法向残差 <code>normal_max</code></td>
+<td class="align-right"><code>≤ 1e-3 * Vd</code></td>
+<td class="align-left">互补/法锥成立</td>
+</tr>
+<tr>
+<td class="align-left">最小有符号二极管电流</td>
+<td class="align-right"><code>≥ -1e-7 A</code></td>
+<td class="align-left">没有明显反向电流</td>
+</tr>
+<tr>
+<td class="align-left">功率相对残差</td>
+<td class="align-right"><code>≤ 1e-3</code></td>
+<td class="align-left">功率闭合</td>
+</tr>
+<tr>
+<td class="align-left">歧义事件</td>
+<td class="align-right">不允许</td>
+<td class="align-left">事件不能模糊/重合</td>
+</tr>
+</tbody></table></div>
+<p><code>physical_guard_pass</code> 通过只说明“在配置的二极管/弱 KVL/能量守卫下可行”，<strong>不等于</strong> H 阶收敛、参考一致、全局唯一或稳定。</p>
+<h2 id="3-7-验收层级">3.7 验收层级</h2>
+<p><code>lcc3v2Accept.m</code> 要求三层同时通过：</p>
+<h3 id="第一层-代数-事件-物理守卫">第一层：代数/事件 + 物理守卫</h3>
+<p>见 3.6。</p>
+<h3 id="第二层-阶数收敛">第二层：阶数收敛</h3>
+<p>连续两次升阶（例如 H9→H15→H31）满足：</p>
+<pre class="code"><code class="language-text">Io 相对变化 &lt; 0.5%
+Irms 相对变化 &lt; 0.5%
+峰值相对变化 &lt; 1%
+事件拓扑一致
+事件时间偏移 &lt; 1e-3 T</code></pre>
+<p>并且前一次变化也要满足同样条件（<code>previous_change</code>）。</p>
+<h3 id="第三层-独立参考">第三层：独立参考</h3>
+<p>独立事件 ODE（<code>lcc3v2Reference.m</code>）的 fine/coarse 都要周期收敛，且：</p>
+<ul>
+<li>参考自身加密变化：<code>Io &lt; 1e-4</code>、峰值 <code>&lt; 1e-3</code>、事件时间 <code>&lt; 1e-5 T</code>；</li>
+<li>HOGA 与参考的积分量/峰值/波形 L2 在阈值内；</li>
+<li>事件拓扑一致。</li>
+</ul>
+<p>这三层缺一不可。只有第一层通过的点，不能称为“严格验收”。</p>
+<h2 id="3-8-h49-版本">3.8 H49 版本</h2>
+<p><code>h49Solve.m</code> 是 <code>studyHoga.m</code> 的受控派生，只改四件事：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">编号</th>
+<th class="align-left">修改</th>
+<th class="align-left">原因</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">D1</td>
+<td class="align-left">固定 <code>H=49</code>，移除 H 参数</td>
+<td class="align-left">AOC 验证只允许 H49</td>
+</tr>
+<tr>
+<td class="align-left">D2</td>
+<td class="align-left">删除 <code>min(H,7)</code> 拓扑发现；必须提供同 <code>Vo</code> 的先验 HOGA 事件解</td>
+<td class="align-left">不做低阶求解</td>
+</tr>
+<tr>
+<td class="align-left">D3</td>
+<td class="align-left">全截止分支用先验开路系数作初值</td>
+<td class="align-left">仅初值</td>
+</tr>
+<tr>
+<td class="align-left">D4</td>
+<td class="align-left">增加共轭对称、索引记账等诊断</td>
+<td class="align-left">十项验收</td>
+</tr>
+</tbody></table></div>
+<p>方程、守卫、容差、事件闭合与物理约束不变。H49 的谐波索引是 <code>[-49:-1, +1:+49]</code>，共 98 个复系数/坐标；DC 电流恒为零，因此“99 个索引 = 98 个求解 + 1 个恒为零”，不是 99 个未知量。</p>
+<p>H49 的十项验收见 <code>code/matlab/h49/h49_accept.m</code> 与 <code>reports/aoc/AOC_20point_accuracy_report.md</code>。</p>
+<h2 id="3-9-已知数值限制">3.9 已知数值限制</h2>
+<ol>
+<li><strong>强形式 KVL 不逐点成立</strong>。有限 Fourier 电流的导数在门控跳变处有 Gibbs 现象；H31 全周期强形式 KVL RMS 约 3.9 V。这是表示能力的边界，不是把参数调一调就能消失的。</li>
+<li><strong>谱残差小 ≠ 模型误差小</strong>。事件残差可以到 <code>1e-13</code> 量级，但峰值/波形误差仍可能存在。</li>
+<li><strong>升阶不保证单调改善</strong>。100 V 的 H7→H15 峰值误差反而增大；H7≈H9 是因为三倍频零序抵消，不是“阶数没用”。</li>
+<li><strong>全截止分支有 DC 解族</strong>。固定代表解的 <code>Io=0</code> 不能证明实际充电可达。</li>
+<li><strong>没有移动窗口/小信号</strong>。当前只解冻结周期稳态；论文的 LTP 小信号、变频动态、闭环稳定性都没有实现。</li>
+<li><strong>没有 ZVS 认证</strong>。零死区、无 Coss 的模型只能给“换流电流方向”的必要条件。</li>
+</ol>
+<h2 id="3-10-代码地图">3.10 代码地图</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>core/lcc3v2Hoga.m</code></td>
+<td class="align-left">事件增强 HOGA 主求解器（V2.3）</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Params.m</code></td>
+<td class="align-left">物理参数与数值设置（<code>Nfourier=1536</code>、容差等）</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Geometry.m</code></td>
+<td class="align-left"><code>B</code>、<code>U</code>、<code>C</code>、六面 <code>A</code>、<code>pairs</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Discover.m</code></td>
+<td class="align-left">从 legacy 候选提取事件 schedule</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Metrics.m</code></td>
+<td class="align-left">波形指标、功率、二极管诊断</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Reference.m</code></td>
+<td class="align-left">独立事件 ODE 参考</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Accept.m</code></td>
+<td class="align-left">三层验收</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3_physics.m</code></td>
+<td class="align-left">门控 Fourier 激励、Δ 子空间、整流可行域</td>
+</tr>
+<tr>
+<td class="align-left"><code>accelerated/studyHoga.m</code></td>
+<td class="align-left">向量化等价实现；扫描用</td>
+</tr>
+<tr>
+<td class="align-left"><code>h49/h49Solve.m</code></td>
+<td class="align-left">固定 H49</td>
+</tr>
+<tr>
+<td class="align-left"><code>h49/h49_accept.m</code></td>
+<td class="align-left">H49 十项验收</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparison/model_config.m</code></td>
+<td class="align-left">统一参数入口</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparison/solve_model.m</code></td>
+<td class="align-left">HOGA/EDF/FHA/REFERENCE 统一接口</td>
+</tr>
+<tr>
+<td class="align-left"><code>normalized/runNormalizedStudy.m</code></td>
+<td class="align-left">归一化 A/B 扫描入口</td>
+</tr>
+<tr>
+<td class="align-left"><code>normalized/studyPoint*.m</code></td>
+<td class="align-left">单点求解/精化/恢复</td>
+</tr>
+<tr>
+<td class="align-left"><code>verification/run_comparison.m</code></td>
+<td class="align-left">20 点四模型比较</td>
+</tr>
+<tr>
+<td class="align-left"><code>verification/run_final_tests.m</code></td>
+<td class="align-left">30 项回归</td>
+</tr>
+</tbody></table></div>
+<h2 id="3-11-最小调用示例">3.11 最小调用示例</h2>
+<blockquote>以下示例假设已把 <code>code/matlab/core</code>、<code>code/matlab/accelerated</code>、<code>code/matlab/comparison</code> 加入 MATLAB path，并且已有同 <code>Vo</code> 的 HOGA 事件解作为 seed。仓库不附带完整扫描的 <code>.mat</code>，因此不能保证“复制即可跑”；复现请按 <code>docs/08_文件与证据索引.md</code> 回到原项目数据。</blockquote>
+<pre class="code"><code class="language-matlab">addpath('code/matlab/core');
+addpath('code/matlab/accelerated');
+addpath('code/matlab/comparison');
+
+cfg = model_config();
+p   = lcc3v2Params("original_reduced");
+p.fs = 280e3;
+
+% 需要一个同 Vo 的 HOGA 事件解作为 seed；下面只是结构示意
+% seed = load('.../HOGA_V400_f280000.mat').result.raw;
+% raw  = studyHoga(p, 400, 31, seed);
+% acc  = lcc3v2Accept(raw, refFine, refCoarse, refChange, orderChange, p);</code></pre>
+<h2 id="3-12-来源">3.12 来源</h2>
+<ul>
+<li><code>reports/audit/HOGA_Audit_Report.md</code></li>
+<li><code>reports/comparison/HOGA_EDF_FHA_Accuracy_Analysis.md</code> 第 1.3、2.2、5.1 节</li>
+<li><code>code/matlab/core/lcc3v2Hoga.m</code></li>
+<li><code>code/matlab/core/lcc3v2Accept.m</code></li>
+<li><code>reports/aoc/AOC_20point_accuracy_report.md</code></li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>00 项目梳理总览：三相 LCC 的 HOGA 建模 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#0-1-一句话">0.1 一句话</a><a class="lvl2" href="#0-2-研究对象">0.2 研究对象</a><a class="lvl2" href="#0-3-hoga-资产地图-四层">0.3 HOGA 资产地图（四层）</a><a class="lvl3" href="#第一层-理论来源">第一层：理论来源</a><a class="lvl3" href="#第二层-数学与代码">第二层：数学与代码</a><a class="lvl3" href="#第三层-验证与数据">第三层：验证与数据</a><a class="lvl3" href="#第四层-应用与解释">第四层：应用与解释</a><a class="lvl2" href="#0-4-项目时间线-与-hoga-相关">0.4 项目时间线（与 HOGA 相关）</a><a class="lvl2" href="#0-5-核心结论-按证据等级">0.5 核心结论（按证据等级）</a><a class="lvl3" href="#a-强的结论-有独立参考-严格验收">A. 强的结论（有独立参考/严格验收）</a><a class="lvl3" href="#b-中等强度的结论-有限样本-本地守卫">B. 中等强度的结论（有限样本/本地守卫）</a><a class="lvl3" href="#c-不能用的结论-已作废-未证实">C. 不能用的结论（已作废/未证实）</a><a class="lvl2" href="#0-6-版本与口径冲突">0.6 版本与口径冲突</a><a class="lvl2" href="#0-7-推荐阅读路径">0.7 推荐阅读路径</a><a class="lvl3" href="#5-分钟-只看结论">5 分钟（只看结论）</a><a class="lvl3" href="#30-分钟-建立正确模型观">30 分钟（建立正确模型观）</a><a class="lvl3" href="#2-小时-能复现-能评审">2 小时（能复现/能评审）</a><a class="lvl2" href="#0-8-这个仓库不是什么">0.8 这个仓库不是什么</a><a class="lvl2" href="#0-9-来源">0.9 来源</a></aside>
+<article class="content">
+<h1 id="00-项目梳理总览-三相-lcc-的-hoga-建模">00 项目梳理总览：三相 LCC 的 HOGA 建模</h1>
+<blockquote>本文是对整个工作区中“三相 LCC + HOGA”相关材料的梳理结果。它回答三个问题： 1. 这个项目里到底有哪些 HOGA 资产？ 2. 哪些结论能用、哪些已作废、哪些还没验证？ 3. 如果只看一个文件，应该看哪个？</blockquote>
+<h2 id="0-1-一句话">0.1 一句话</h2>
+<p><strong>对象</strong>：50 V → 800 V 的三相 Δ/Y LCC 谐振电容充电电源（CPS）。 <strong>核心方法</strong>：用移动 Fourier 系数（HOGA）建立三相 LCC 的周期稳态模型，保留多阶谐振电流谐波和六管整流的精确事件约束。 <strong>当前最强证据</strong>：事件增强 HOGA（V2.3/H31）在 20 个冻结工况上，<code>Io</code>/RMS/峰值/波形的整体精度显著优于本工程的 EDF/FHA；AOC 20 点用 H49 验证，<code>Io</code> MAPE 0.0057%。</p>
+<h2 id="0-2-研究对象">0.2 研究对象</h2>
+<pre class="code"><code class="language-text">Vin 50 V → 三桥臂逆变（120°）→ 每相 Ls 4.7 μH / Cs 135 nF
+→ Δ 接 Cp 27 nF/边 + 三台 1:4 变压器（一次 Δ / 二次 Y 浮空）
+→ 共用六二极管桥 → Co 6.25 μF × 2 串联 = 3.125 μF → Vo 0–800 V</code></pre>
+<p>详细拓扑、参数、状态方程见 <a href="01_拓扑与参数.html"><code>docs/01_拓扑与参数.md</code></a>。</p>
+<h2 id="0-3-hoga-资产地图-四层">0.3 HOGA 资产地图（四层）</h2>
+<h3 id="第一层-理论来源">第一层：理论来源</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">资产</th>
+<th class="align-left">位置</th>
+<th class="align-left">作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">TPEL 2024 HOGA 论文</td>
+<td class="align-left"><code>paper/</code>、原 <code>电容充电电源_参考文献/</code></td>
+<td class="align-left">移动 Fourier 系数、边带耦合、PWM/PSM/PFM/状态相关开关建模、LTP 小信号</td>
+</tr>
+<tr>
+<td class="align-left">论文阅读笔记</td>
+<td class="align-left"><a href="02_论文精读_HOGA方法.html"><code>docs/02_论文精读_HOGA方法.md</code></a></td>
+<td class="align-left">把论文方法映射到本项目的三相 LCC</td>
+</tr>
+<tr>
+<td class="align-left">单相 50 V HOGA 代码讲解</td>
+<td class="align-left">原 <code>LCC_HighVoltage_CCM_Study/50V_HOGA_code_walkthrough_20261010/</code></td>
+<td class="align-left">方法谱系/教学材料；<strong>不是</strong>三相模型</td>
+</tr>
+</tbody></table></div>
+<h3 id="第二层-数学与代码">第二层：数学与代码</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">资产</th>
+<th class="align-left">位置</th>
+<th class="align-left">作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">V2.3 事件增强 HOGA</td>
+<td class="align-left">原 <code>MATLAB_PRJ/three_phase/hoga_audit_v2_20261014/src/core/lcc3v2Hoga.m</code>；本仓库 <code>code/matlab/core/</code></td>
+<td class="align-left">主求解器：Fourier 电流 + 分段精确整流 + 事件闭合</td>
+</tr>
+<tr>
+<td class="align-left">向量化 <code>studyHoga.m</code></td>
+<td class="align-left">原 <code>.../scripts/studyHoga.m</code>；本仓库 <code>code/matlab/accelerated/</code></td>
+<td class="align-left">扫描用；与 V2.3 四点等价回归</td>
+</tr>
+<tr>
+<td class="align-left">H49 <code>h49Solve.m</code></td>
+<td class="align-left">原 <code>H49_comparison/model/HOGA_H49/</code>；本仓库 <code>code/matlab/h49/</code></td>
+<td class="align-left">AOC 专用固定 49 阶</td>
+</tr>
+<tr>
+<td class="align-left">几何/参数/指标/参考/验收</td>
+<td class="align-left">本仓库 <code>code/matlab/core/</code></td>
+<td class="align-left"><code>lcc3v2Geometry/Params/Metrics/Reference/Accept</code></td>
+</tr>
+<tr>
+<td class="align-left">legacy 有限阶 HOGA</td>
+<td class="align-left">本仓库 <code>code/matlab/core/solve_three_phase_lcc_hoga.m</code></td>
+<td class="align-left">历史候选；400 V 被物理守卫拒绝，不作为当前精度</td>
+</tr>
+</tbody></table></div>
+<h3 id="第三层-验证与数据">第三层：验证与数据</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">资产</th>
+<th class="align-left">规模</th>
+<th class="align-left">位置</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">20 点 × 4 方法比较</td>
+<td class="align-left">80 条有效记录</td>
+<td class="align-left"><code>data/comparison/</code>、<code>reports/comparison/</code></td>
+</tr>
+<tr>
+<td class="align-left">三点 Simulink 交叉验证</td>
+<td class="align-left">100/400/800 V，coarse/fine</td>
+<td class="align-left"><code>data/comparison/simulink_refinement.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">28 个阶数点</td>
+<td class="align-left">H=1…31，四电压</td>
+<td class="align-left"><code>data/comparison/harmonic_convergence.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">四点 H31 严格验收</td>
+<td class="align-left">100/400/700/800 V</td>
+<td class="align-left"><code>data/comparison/convergence_validation.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">344 点归一化扫描</td>
+<td class="align-left">fn 1–2、k 0.1–1.0</td>
+<td class="align-left"><code>data/normalized/characteristic_domain.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">18 次开关模型验证</td>
+<td class="align-left">17 通过 / 1 失败保留</td>
+<td class="align-left"><code>data/normalized/switching_validation_all.csv</code></td>
+</tr>
+<tr>
+<td class="align-left">AOC 20 点 H49</td>
+<td class="align-left">2.153487 ms 充电</td>
+<td class="align-left"><code>data/aoc/</code>、<code>reports/aoc/</code></td>
+</tr>
+</tbody></table></div>
+<h3 id="第四层-应用与解释">第四层：应用与解释</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">资产</th>
+<th class="align-left">位置</th>
+<th class="align-left">作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">归一化特性扫描（fn/k）</td>
+<td class="align-left"><code>reports/normalized/</code></td>
+<td class="align-left">Io/Im 地图、k 效应、550–600 V 交叉</td>
+</tr>
+<tr>
+<td class="align-left">AOC 充电轨迹验证</td>
+<td class="align-left"><code>reports/aoc/</code></td>
+<td class="align-left">0→800 V 全过程逐点精度</td>
+</tr>
+<tr>
+<td class="align-left">模态分析（非 HOGA 主线）</td>
+<td class="align-left">原 <code>reports/kimi_mode_review_20261024/</code>、<code>reports/waveform_modes_20261023/</code></td>
+<td class="align-left">12 联合区间、Cp 分段钳位；与 HOGA 互为交叉验证，但<strong>不是</strong> HOGA 模型本身</td>
+</tr>
+<tr>
+<td class="align-left">磁件/损耗/硬件</td>
+<td class="align-left">原 <code>MATLAB_PRJ/demo/magnetics_*</code> 等</td>
+<td class="align-left">冻结基波/工程估算；不能当整机损耗或硬件定型</td>
+</tr>
+</tbody></table></div>
+<h2 id="0-4-项目时间线-与-hoga-相关">0.4 项目时间线（与 HOGA 相关）</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">时间</th>
+<th class="align-left">事件</th>
+<th class="align-left">产物/状态</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">2026-09-27/28</td>
+<td class="align-left">单相 k=1 四模型、773 点 HOGA 扫描、完整充电、800 V 停充</td>
+<td class="align-left">单相方法来源；不是三相</td>
+</tr>
+<tr>
+<td class="align-left">2026-10-14</td>
+<td class="align-left">V2.2 → V2.3 审计；HOGA 交付复核</td>
+<td class="align-left">V2.3 事件增强；legacy 400 V 被拒</td>
+</tr>
+<tr>
+<td class="align-left">2026-10-20</td>
+<td class="align-left">归一化 fn/k 扫描 A/B 阶段；交接给 DeepSeek</td>
+<td class="align-left">272 A + 168 B；399 条历史记录</td>
+</tr>
+<tr>
+<td class="align-left">2026-10-23</td>
+<td class="align-left">20 点四模型比较；39 图；审计</td>
+<td class="align-left">80 条有效记录；3 点 Simulink</td>
+</tr>
+<tr>
+<td class="align-left">2026-10-24</td>
+<td class="align-left">精度分析报告；AOC 20 点；H49；阶段 C 恢复</td>
+<td class="align-left">276 通过/68 未决；H49 20/20</td>
+</tr>
+</tbody></table></div>
+<h2 id="0-5-核心结论-按证据等级">0.5 核心结论（按证据等级）</h2>
+<h3 id="a-强的结论-有独立参考-严格验收">A. 强的结论（有独立参考/严格验收）</h3>
+<ol>
+<li><strong>HOGA H31 在 20 点整体最准</strong>：16 个共同 CCM 点上，<code>Io MAE</code> 15.579 μA（EDF 4.284 mA、FHA 90.874 mA），RMS MAE 0.159 mA（32.659 mA、0.924 A），峰值 MAE 4.838 mA（124.619 mA、1.367 A），波形 NRMSE 0.0566%（1.906%、22.208%）。</li>
+<li><strong>三点 Simulink 交叉验证</strong>：100/400/800 V 的 fine <code>Io</code> 与独立 ODE 最大相对差 0.00213%，说明参考链自洽。</li>
+<li><strong>四点 H31 严格验收 PASS</strong>：100/400/700/800 V，包含两次升阶 + 独立参考 + 物理守卫。</li>
+<li><strong>AOC 20 点 H49 全部有效</strong>：<code>Io</code> MAPE 0.00566%、RMS 0.00391%、峰值 0.0270%、NRMSE 0.0307%。</li>
+<li><strong>HOGA 的优势来自事件一致闭合 + 多谐波</strong>：不是“只要阶数高就准”；legacy 高阶但法锥失败的反例保留。</li>
+</ol>
+<h3 id="b-中等强度的结论-有限样本-本地守卫">B. 中等强度的结论（有限样本/本地守卫）</h3>
+<ol>
+<li>344 点归一化地图：<code>Io</code> 随 <code>Vo</code> 单调下降；只有 <code>fn=1.5</code> 覆盖到 800 V；<code>fn=1.0</code> 是数值奇异，不是物理边界。</li>
+<li><code>Im</code> 在低压低频最大（28.755 A @ 25 V/fn1.10/k0.2）；550–600 V 有频率次序反转（只给变号区间，不插值求根）。</li>
+<li><code>k≈0.2</code> 适合 800 V（末端 0.800 A）；<code>k≈0.35</code> 适合 400 V（1.020 A）；<code>k≥0.8</code> 可用区间 &lt;200 V。</li>
+<li>调频降低绝对应力，但不改善单位输出的应力代价（<code>Im/Io</code> 反而上升）。</li>
+<li>18 次开关验证 17 通过；最大 <code>Io</code> 误差 0.062%、<code>Im</code> 0.623%、<code>Irms</code> 0.016%、波形 L2 0.232%。</li>
+</ol>
+<h3 id="c-不能用的结论-已作废-未证实">C. 不能用的结论（已作废/未证实）</h3>
+<ol>
+<li>“A 相一个周期 6 个模态 M1–M6” → 已作废；<code>Id</code> 只是 D1 单管电流。</li>
+<li>“整机 12 = 6 导通 + 6 截止” → 数字巧合；正确是 6 门极 × 6 整流对。</li>
+<li>“<code>v_Cp1</code> 无钳位” → 错；存在三相分段钳位。</li>
+<li>“整流有 6 个截止段” → 错；全窗口至少两只二极管导通。</li>
+<li>“器件全理想（Ron=Rd=td=Coss=eps）” → 不准确；二极管是 PWL 含结电容。</li>
+<li>“20 点都是 Simulink” → 只有 3 点。</li>
+<li>“HOGA 0.004% 是物理精度” → 已接近参考平台差（15 μA/0.2 mA）。</li>
+<li>“68 个未决点物理无解” → 至少 k=0.5 的 9 点有开关锚点；其余未证明。</li>
+<li>“全阻断族 = 实际充电可达” → 不成立。</li>
+<li>“换流电流为正 = ZVS” → 不成立。</li>
+</ol>
+<p>详细红线见 <a href="07_局限与证据等级.html"><code>docs/07_局限与证据等级.md</code></a>。</p>
+<h2 id="0-6-版本与口径冲突">0.6 版本与口径冲突</h2>
+<p>这是梳理中最重要的“防坑”部分：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">冲突</th>
+<th class="align-left">旧口径</th>
+<th class="align-left">新口径</th>
+<th class="align-left">采用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">归一化通过/未决</td>
+<td class="align-left">263 通过 / 190 充电 / 81 未决（阶段 C 前）</td>
+<td class="align-left">276 通过 / 203 充电 / 73 全阻断 / 68 未决（阶段 C 后）</td>
+<td class="align-left"><strong>276/203/73/68</strong></td>
+</tr>
+<tr>
+<td class="align-left">H31/H63 通过点</td>
+<td class="align-left">247/16（05）</td>
+<td class="align-left">257/19（02、06、CSV）</td>
+<td class="align-left"><strong>257/19</strong></td>
+</tr>
+<tr>
+<td class="align-left">AOC 点数</td>
+<td class="align-left">目录名 <code>10point</code></td>
+<td class="align-left">实际 20 点</td>
+<td class="align-left"><strong>20 点</strong></td>
+</tr>
+<tr>
+<td class="align-left">原始记录 vs 唯一点</td>
+<td class="align-left">508 条原始记录</td>
+<td class="align-left">344 个唯一坐标</td>
+<td class="align-left">两者分开引用</td>
+</tr>
+<tr>
+<td class="align-left">V2.2 vs V2.3</td>
+<td class="align-left">V2.2 历史快照</td>
+<td class="align-left">V2.3 事件增强</td>
+<td class="align-left"><strong>V2.3</strong></td>
+</tr>
+<tr>
+<td class="align-left">legacy vs V2.3</td>
+<td class="align-left">legacy 400 V <code>Io=1.0216 A</code>，法锥失败</td>
+<td class="align-left">V2.3 <code>1.00575 A</code>，通过</td>
+<td class="align-left"><strong>V2.3</strong></td>
+</tr>
+</tbody></table></div>
+<p>这些冲突不影响定性结论，但引用具体计数时必须写口径。</p>
+<h2 id="0-7-推荐阅读路径">0.7 推荐阅读路径</h2>
+<h3 id="5-分钟-只看结论">5 分钟（只看结论）</h3>
+<ol>
+<li>本页 0.1、0.5、0.6。</li>
+<li><a href="../ONE_PAGE.html"><code>ONE_PAGE.md</code></a>。</li>
+<li><a href="07_局限与证据等级.html"><code>docs/07_局限与证据等级.md</code></a> 的红线。</li>
+</ol>
+<h3 id="30-分钟-建立正确模型观">30 分钟（建立正确模型观）</h3>
+<ol>
+<li><a href="01_拓扑与参数.html"><code>docs/01_拓扑与参数.md</code></a>。</li>
+<li><a href="02_论文精读_HOGA方法.html"><code>docs/02_论文精读_HOGA方法.md</code></a> 的 2.2–2.7。</li>
+<li><a href="03_三相LCC_HOGA实现.html"><code>docs/03_三相LCC_HOGA实现.md</code></a> 的 3.1–3.7。</li>
+<li><a href="04_模型对比结果.html"><code>docs/04_模型对比结果.md</code></a> 的 4.2–4.8。</li>
+</ol>
+<h3 id="2-小时-能复现-能评审">2 小时（能复现/能评审）</h3>
+<ol>
+<li>上述全部。</li>
+<li><a href="05_归一化特性扫描.html"><code>docs/05_归一化特性扫描.md</code></a>。</li>
+<li><a href="06_充电轨迹_AOC.html"><code>docs/06_充电轨迹_AOC.md</code></a>。</li>
+<li><code>reports/audit/HOGA_Audit_Report.md</code>。</li>
+<li><code>reports/comparison/HOGA_EDF_FHA_Accuracy_Analysis.md</code> 第 5–7 章。</li>
+<li><code>data/</code> 中对应 CSV。</li>
+</ol>
+<h2 id="0-8-这个仓库不是什么">0.8 这个仓库不是什么</h2>
+<ul>
+<li>不是完整项目镜像：没有 508 个原始 <code>.mat</code>、没有 <code>runtime/</code>、没有硬件实验。</li>
+<li>不是“HOGA 已经证明全局唯一/稳定”：只有周期稳态的局部验收。</li>
+<li>不是“三相 LCC 的 HOGA 小信号模型”：移动窗口/小信号/变频动态没有实现。</li>
+<li>不是“硬件设计定型”：磁件、损耗、温升、EMI、ZVS 都没有闭环。</li>
+<li>不是“论文的翻译”：论文阅读笔记是方法梳理 + 项目映射。</li>
+</ul>
+<h2 id="0-9-来源">0.9 来源</h2>
+<ul>
+<li>根目录 <code>README.md</code>、<code>AGENTS.md</code>、<code>项目交接_给AI_20261024.md</code>（原项目）</li>
+<li><code>model_comparison_HOGA_EDF_FHA/README.md</code>、<code>PROGRESS.md</code></li>
+<li><code>MATLAB_PRJ/three_phase/hoga_general_characteristics_20261020/handoff/DeepSeek_交接说明.md</code></li>
+<li><code>reports/audit/HOGA_Audit_Report.md</code></li>
+<li><code>reports/comparison/HOGA_EDF_FHA_Accuracy_Analysis.md</code></li>
+<li><code>reports/normalized/02_扫描与求解状态.md</code></li>
+<li><code>reports/aoc/AOC_20point_accuracy_report.md</code></li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

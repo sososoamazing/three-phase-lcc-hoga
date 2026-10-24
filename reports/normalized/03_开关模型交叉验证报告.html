@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 HOGA 与 Simulink 开关模型交叉验证报告 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../../index.html">总览</a>
+    <a href="../../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../../docs/04_模型对比结果.html">结果</a>
+    <a href="../../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../../docs/07_局限与证据等级.html">边界</a>
+    <a href="../../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#1-目的与判据">1 目的与判据</a><a class="lvl2" href="#2-方法">2 方法</a><a class="lvl2" href="#3-结果总表-18-次记录-17-通过-1-保留为失败">3 结果总表（18 次记录，17 通过，1 保留为失败）</a><a class="lvl2" href="#4-误差统计-必须分开表述">4 误差统计（必须分开表述）</a><a class="lvl2" href="#5-失败记录与开路门极映射补验">5 失败记录与开路门极映射补验</a><a class="lvl2" href="#6-细步长与更多周期对照">6 细步长与更多周期对照</a><a class="lvl2" href="#7-结论与边界">7 结论与边界</a><a class="lvl2" href="#8-开关模型锚点-不属于第-3-节的-18-次验证记录">8 开关模型锚点（不属于第 3 节的 18 次验证记录）</a></aside>
+<article class="content">
+<blockquote><strong>归档说明</strong>：本文是原项目报告的公开归档版；数值与结论未改，仅将本机绝对路径替换为占位符、把图片指向本仓库 <code>reports/accuracy_figures/</code>。原文中未随包迁移的内部 CSV/目录链接可能失效；可复现数据以 <code>data/</code> 与 <code>docs/08_文件与证据索引.md</code> 为准。</blockquote>
+<h1 id="03-hoga-与-simulink-开关模型交叉验证报告">03 HOGA 与 Simulink 开关模型交叉验证报告</h1>
+<h2 id="1-目的与判据">1 目的与判据</h2>
+<p>用<strong>同一电路参数、同一器件理想化假设</strong>的开关模型，校验 HOGA 周期稳态解在 Io、Im、Irms 与波形上的可信度。判据（<code>runSwitchingValidation.m</code> 内 <code>analyzeTrace</code>）：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">判据</th>
+<th class="align-left">阈值</th>
+<th class="align-left">含义</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Vo 窗口漂移</td>
+<td class="align-left">&lt; 0.1 %</td>
+<td class="align-left">近冻结输出电容下窗口内电压变化</td>
+</tr>
+<tr>
+<td class="align-left">周期间变化</td>
+<td class="align-left">&lt; 0.5 %（Frobenius 相对）</td>
+<td class="align-left">末周期与前一周期的电流差</td>
+</tr>
+<tr>
+<td class="align-left">Io 一致</td>
+<td class="align-left">相对 &lt; 2 % 或绝对 &lt; 10 µA</td>
+<td class="align-left">全阻断族用绝对判据（相对误差无定义）</td>
+</tr>
+<tr>
+<td class="align-left">Im / Irms 一致</td>
+<td class="align-left">&lt; 2 %</td>
+<td class="align-left">峰值与有效值</td>
+</tr>
+</tbody></table></div>
+<h2 id="2-方法">2 方法</h2>
+<ul>
+<li>模型：复制 <code>lcc3_ideal_charge.slx</code>，用 <code>SimulationInput</code> 逐块覆盖参数，<strong>原始模型与原始电容不改</strong>。</li>
+<li>输出电容临时放大到实际的 10⁴ 倍（0.03125 F）以近冻结 Vo；跑 64 周期（细算 128 周期），取末 8 周期统计。</li>
+<li>初值：仅用 HOGA 解的初态（i_L、vc）作启动设置，<strong>其后所有电流完全来自 <code>sim(in)</code></strong>；瞬态丢弃并单独检查周期性。</li>
+<li>简化：零死区、无 Coss、Ron/Rd = 1 µΩ（细算 0.1 µΩ）、Goff = 10 pS（细算 0.01 nS），ode15s，MaxStep = T/250（细算 T/500），RelTol 2e-7。</li>
+<li>因此本轮验证的是<strong>参考电路族的数值一致性</strong>，不是器件级 ZVS、损耗或热行为。</li>
+</ul>
+<h2 id="3-结果总表-18-次记录-17-通过-1-保留为失败">3 结果总表（18 次记录，17 通过，1 保留为失败）</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">Vo (V)</th>
+<th class="align-left">fn</th>
+<th class="align-left">k</th>
+<th class="align-left">通过</th>
+<th class="align-left">Io 误差</th>
+<th class="align-left">Im 误差</th>
+<th class="align-left">Irms 误差</th>
+<th class="align-left">波形 L2</th>
+<th class="align-left">Vo 漂移</th>
+<th class="align-left">周期变化</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">V100_F1.10_K0.2</td>
+<td class="align-left">100</td>
+<td class="align-left">1.10</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0099 %</td>
+<td class="align-left">0.0233 %</td>
+<td class="align-left">0.0050 %</td>
+<td class="align-left">0.033 %</td>
+<td class="align-left">0.0045 %</td>
+<td class="align-left">0.002 %</td>
+</tr>
+<tr>
+<td class="align-left">V100_F1.20_K0.2</td>
+<td class="align-left">100</td>
+<td class="align-left">1.20</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0081 %</td>
+<td class="align-left">0.0224 %</td>
+<td class="align-left">0.0030 %</td>
+<td class="align-left">0.052 %</td>
+<td class="align-left">0.0022 %</td>
+<td class="align-left">0.003 %</td>
+</tr>
+<tr>
+<td class="align-left">V100_F1.20_K0.2_fine</td>
+<td class="align-left">100</td>
+<td class="align-left">1.20</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0074 %</td>
+<td class="align-left">0.0233 %</td>
+<td class="align-left">0.0010 %</td>
+<td class="align-left">0.053 %</td>
+<td class="align-left">0.0022 %</td>
+<td class="align-left">0.003 %</td>
+</tr>
+<tr>
+<td class="align-left">V100_F1.90_K0.2</td>
+<td class="align-left">100</td>
+<td class="align-left">1.90</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0008 %</td>
+<td class="align-left">0.251 %</td>
+<td class="align-left">0.0012 %</td>
+<td class="align-left">0.111 %</td>
+<td class="align-left">0.0003 %</td>
+<td class="align-left">0.001 %</td>
+</tr>
+<tr>
+<td class="align-left"><strong>V350_F1.40_K0.5</strong></td>
+<td class="align-left">350</td>
+<td class="align-left">1.40</td>
+<td class="align-left">0.5</td>
+<td class="align-left">是</td>
+<td class="align-left"><strong>0.0620 %</strong></td>
+<td class="align-left">0.0175 %</td>
+<td class="align-left">0.0028 %</td>
+<td class="align-left">0.049 %</td>
+<td class="align-left">0.0002 %</td>
+<td class="align-left">0.002 %</td>
+</tr>
+<tr>
+<td class="align-left">V400_F1.40_K0.1</td>
+<td class="align-left">400</td>
+<td class="align-left">1.40</td>
+<td class="align-left">0.1</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0047 %</td>
+<td class="align-left">0.0074 %</td>
+<td class="align-left">0.0045 %</td>
+<td class="align-left">0.089 %</td>
+<td class="align-left">0.0002 %</td>
+<td class="align-left">0.003 %</td>
+</tr>
+<tr>
+<td class="align-left">V400_F1.40_K1</td>
+<td class="align-left">400</td>
+<td class="align-left">1.40</td>
+<td class="align-left">1.0</td>
+<td class="align-left">是</td>
+<td class="align-left">绝对 &lt; 10 µA</td>
+<td class="align-left">0.623 %</td>
+<td class="align-left">0.0159 %</td>
+<td class="align-left">0.232 %</td>
+<td class="align-left">0</td>
+<td class="align-left">0.254 %</td>
+</tr>
+<tr>
+<td class="align-left">V400_F1.40_K1_openmap</td>
+<td class="align-left">400</td>
+<td class="align-left">1.40</td>
+<td class="align-left">1.0</td>
+<td class="align-left">是</td>
+<td class="align-left">绝对 &lt; 10 µA</td>
+<td class="align-left">0.315 %</td>
+<td class="align-left">0.0032 %</td>
+<td class="align-left">0.056 %</td>
+<td class="align-left">0</td>
+<td class="align-left">0.056 %</td>
+</tr>
+<tr>
+<td class="align-left">V400_F1.50_K0.2</td>
+<td class="align-left">400</td>
+<td class="align-left">1.50</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0330 %</td>
+<td class="align-left">0.0697 %</td>
+<td class="align-left">0.0021 %</td>
+<td class="align-left">0.068 %</td>
+<td class="align-left">0.0002 %</td>
+<td class="align-left">0.002 %</td>
+</tr>
+<tr>
+<td class="align-left">V550_F1.40_K0.2</td>
+<td class="align-left">550</td>
+<td class="align-left">1.40</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0318 %</td>
+<td class="align-left">0.0007 %</td>
+<td class="align-left">0.0053 %</td>
+<td class="align-left">0.063 %</td>
+<td class="align-left">0.0002 %</td>
+<td class="align-left">0.004 %</td>
+</tr>
+<tr>
+<td class="align-left">V550_F1.40_K0.2_fine</td>
+<td class="align-left">550</td>
+<td class="align-left">1.40</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0329 %</td>
+<td class="align-left">0.0017 %</td>
+<td class="align-left">0.0021 %</td>
+<td class="align-left">0.062 %</td>
+<td class="align-left">0.0002 %</td>
+<td class="align-left">0.001 %</td>
+</tr>
+<tr>
+<td class="align-left">V550_F1.50_K0.2</td>
+<td class="align-left">550</td>
+<td class="align-left">1.50</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0063 %</td>
+<td class="align-left">0.0294 %</td>
+<td class="align-left">0.0039 %</td>
+<td class="align-left">0.059 %</td>
+<td class="align-left">0.0001 %</td>
+<td class="align-left">0.003 %</td>
+</tr>
+<tr>
+<td class="align-left"><strong>V600_F1.60_K0.2</strong></td>
+<td class="align-left">600</td>
+<td class="align-left">1.60</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0442 %</td>
+<td class="align-left">0.0214 %</td>
+<td class="align-left">0.0041 %</td>
+<td class="align-left">0.054 %</td>
+<td class="align-left">0.0001 %</td>
+<td class="align-left">0.002 %</td>
+</tr>
+<tr>
+<td class="align-left">V700_F1.10_K0.2</td>
+<td class="align-left">700</td>
+<td class="align-left">1.10</td>
+<td class="align-left">0.2</td>
+<td class="align-left"><strong>否</strong></td>
+<td class="align-left">绝对 &lt; 10 µA</td>
+<td class="align-left"><strong>1.145 %</strong></td>
+<td class="align-left">0.012 %</td>
+<td class="align-left">0.872 %</td>
+<td class="align-left">0</td>
+<td class="align-left"><strong>1.684 %</strong></td>
+</tr>
+<tr>
+<td class="align-left">V700_F1.10_K0.2_openmap</td>
+<td class="align-left">700</td>
+<td class="align-left">1.10</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">绝对 &lt; 10 µA</td>
+<td class="align-left">0.0797 %</td>
+<td class="align-left">0.0097 %</td>
+<td class="align-left">0.211 %</td>
+<td class="align-left">0</td>
+<td class="align-left">0.106 %</td>
+</tr>
+<tr>
+<td class="align-left">V750_F1.90_K0.2</td>
+<td class="align-left">750</td>
+<td class="align-left">1.90</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">绝对 &lt; 10 µA</td>
+<td class="align-left">0.513 %</td>
+<td class="align-left">0.0035 %</td>
+<td class="align-left">0.190 %</td>
+<td class="align-left">0</td>
+<td class="align-left">0.155 %</td>
+</tr>
+<tr>
+<td class="align-left">V750_F1.90_K0.2_openmap</td>
+<td class="align-left">750</td>
+<td class="align-left">1.90</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">绝对 &lt; 10 µA</td>
+<td class="align-left">0.259 %</td>
+<td class="align-left">0.0031 %</td>
+<td class="align-left">0.046 %</td>
+<td class="align-left">0</td>
+<td class="align-left">0.024 %</td>
+</tr>
+<tr>
+<td class="align-left"><strong>V800_F1.50_K0.2</strong></td>
+<td class="align-left">800</td>
+<td class="align-left">1.50</td>
+<td class="align-left">0.2</td>
+<td class="align-left">是</td>
+<td class="align-left">0.0036 %</td>
+<td class="align-left">0.0025 %</td>
+<td class="align-left">0.0022 %</td>
+<td class="align-left">0.046 %</td>
+<td class="align-left">0.0001 %</td>
+<td class="align-left">0.003 %</td>
+</tr>
+</tbody></table></div>
+<p>加粗为本轮新增的 3 个点。</p>
+<h2 id="4-误差统计-必须分开表述">4 误差统计（必须分开表述）</h2>
+<ul>
+<li><strong>仅 17 个通过点</strong>：Io 最大相对误差 <strong>0.0620 %</strong>（350 V/fn1.4/k0.5，只有非零 Io 才定义相对误差）；Im 最大 <strong>0.623 %</strong>（400 V/fn1.4/k1，全阻断族）；Irms 最大 <strong>0.0159 %</strong>；波形 L2 最大 <strong>0.232 %</strong>。</li>
+<li><strong>含失败记录的全部 18 条</strong>：Im 最大 <strong>1.145 %</strong> 来自未达周期性的 700 V/fn1.1 记录。<strong>不得把这个数写成"14/17 个通过点的最大误差"</strong>。</li>
+<li>全阻断族的 Io 相对误差为 NaN，必须用绝对误差（|Io| &lt; 10 µA）表述。</li>
+<li>覆盖率：低（100 V）、中（350–550 V）、高（700–800 V）电压；fn 1.10–1.90；k = 0.1 / 0.2 / 0.5 / 1.0。<strong>k = 0.35 与 k = 0.8 没有开关验证点</strong>，这两个 k 的结论只能依赖 HOGA 内部验收。</li>
+</ul>
+<h2 id="5-失败记录与开路门极映射补验">5 失败记录与开路门极映射补验</h2>
+<p><code>V700_F1.10_K0.2</code>：HOGA 给出 700 V/fn1.1 的全阻断周期族（Io ≈ 9.6×10⁻¹⁶ A，Im ≈ 3.974 A）。以该有限阶 HOGA 初态启动 Simulink 后，末周期与前一周期的电流相对差 <strong>1.684 %</strong>，超过 0.5 % 门槛，故判为不通过。需要说明的是：该记录的 Im 相对差为 1.145 %、Irms 相对差 0.012 %，两者都仍在 2 % 幅值门槛内；<strong>真正导致拒绝的是周期性未达标，而不是幅值不一致</strong>。这一点在引用时必须写清楚。</p>
+<p>原因：全阻断族的"开路"周期轨道在门极映射下没有固定自由直流代表元，最小范数映射选出的代表不一定落在六边形内，有限阶初态启动后系统缓慢漂移。</p>
+<p>补验：<code>scripts/studyOpenOrbit.m</code> 用缩放仿射映射 + 副边直流均值为零的约束重新选定代表元（<strong>仅用于独立验证初始化，不回灌 HOGA</strong>），得到 <code>V700_F1.10_K0.2_openmap</code>，周期性 0.106 %、Im 误差 0.0797 %，通过。</p>
+<p>同一问题在 400 V/k1 与 750 V/fn1.9 上也出现，openmap 版本均通过（0.056 %、0.024 % 周期变化）。</p>
+<h2 id="6-细步长与更多周期对照">6 细步长与更多周期对照</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">点</th>
+<th class="align-left">Io 差</th>
+<th class="align-left">Im 差</th>
+<th class="align-left">Irms 差</th>
+<th class="align-left">周期</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">100 V / fn1.2</td>
+<td class="align-left">1.46×10⁻⁵ A</td>
+<td class="align-left">0.00092 %</td>
+<td class="align-left">0.0021 %</td>
+<td class="align-left">64 → 128</td>
+</tr>
+<tr>
+<td class="align-left">550 V / fn1.4</td>
+<td class="align-left">1.08×10⁻⁵ A</td>
+<td class="align-left">0.00101 %</td>
+<td class="align-left">0.0032 %</td>
+<td class="align-left">64 → 128</td>
+</tr>
+</tbody></table></div>
+<p>步长减半、周期加倍后三个量的变化都在 10⁻³ % 量级，说明 64 周期/T250 的默认设置已足够，误差主要来自 HOGA 截断与 Simulink 理想化差异，不是数值分辨率。</p>
+<h2 id="7-结论与边界">7 结论与边界</h2>
+<ol>
+<li>在 17 个通过点上，HOGA 的 Io/Im/Irms 与开关模型一致到 0.06 % / 0.62 % / 0.016 % 以内，波形 L2 差 ≤ 0.23 %，支持把 HOGA 结果用于 Io–Vo、Im–Vo 与二维工作图。</li>
+<li><strong>400 V/fn1.4/k0.5 仍然无法验证</strong>：该坐标在 A、B 两阶段都没有通过 HOGA 验收（<code>V0400.00_F01.400_K00.500.mat</code> 状态仍为 UNRESOLVED），没有可信参考解，因此不造假对比。改用同一 k 下最后一个已验收点 350 V/fn1.4/k0.5 作为 k=0.5 的代表验证点。</li>
+<li>本轮同时验证了 <code>runSwitchingValidation</code> 的"A 失败、B 成功"选择逻辑：350 V/fn1.4/k0.5 在 A 中未决、在 B 中通过，脚本正确采用了 B 解。</li>
+<li>验证范围限制：零死区、无 Coss、无整流 Cj、无寄生；近冻结输出电容；<strong>不构成 ZVS 认证、不构成损耗或热验证</strong>。</li>
+<li>所有原始波形保存在 <code>validation/*.mat</code>（含 trace、cfg、s、record），聚合表 <code>tables/switching_validation_all.csv</code>；<code>tables/switching_validation.csv</code> 只反映最近一个批次，不是总表。</li>
+</ol>
+<h2 id="8-开关模型锚点-不属于第-3-节的-18-次验证记录">8 开关模型锚点（不属于第 3 节的 18 次验证记录）</h2>
+<p>第 3 节的验证以 HOGA 解为参考；本节相反：<strong>HOGA 在那些坐标上未决</strong>，因此改用开关模型独立判断"该工作点是否存在导通周期解"。方法同第 2 节（近冻结 Co×10⁴、64 周期取末 8 周期、ode15s、T/250 步长），但初始状态由<strong>另一个电压的已验收解按 (Vo+2Vf) 比例缩放</strong>得到，不引用该点自身的任何 HOGA 结果。</p>
+<p>结果表 <code>tables/switch_model_anchors.csv</code>：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">k</th>
+<th class="align-left">Vo (V)</th>
+<th class="align-left">Io (A)</th>
+<th class="align-left">Im (A)</th>
+<th class="align-left">Irms (A)</th>
+<th class="align-left">周期间变化</th>
+<th class="align-left">判读</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">0.5</td>
+<td class="align-left">400</td>
+<td class="align-left">0.7753</td>
+<td class="align-left">15.01</td>
+<td class="align-left">10.71</td>
+<td class="align-left">0.002 %</td>
+<td class="align-left">导通锚点</td>
+</tr>
+<tr>
+<td class="align-left">0.5</td>
+<td class="align-left">500</td>
+<td class="align-left">0.6614</td>
+<td class="align-left">17.50</td>
+<td class="align-left">12.47</td>
+<td class="align-left">0.002 %</td>
+<td class="align-left">导通锚点</td>
+</tr>
+<tr>
+<td class="align-left">0.5</td>
+<td class="align-left">600</td>
+<td class="align-left">0.5355</td>
+<td class="align-left">19.96</td>
+<td class="align-left">14.20</td>
+<td class="align-left">0.002 %</td>
+<td class="align-left">导通锚点</td>
+</tr>
+<tr>
+<td class="align-left">0.5</td>
+<td class="align-left">700</td>
+<td class="align-left">0.3891</td>
+<td class="align-left">22.40</td>
+<td class="align-left">15.86</td>
+<td class="align-left">0.002 %</td>
+<td class="align-left">导通锚点</td>
+</tr>
+<tr>
+<td class="align-left">0.5</td>
+<td class="align-left">800</td>
+<td class="align-left">0.2026</td>
+<td class="align-left">24.78</td>
+<td class="align-left">17.39</td>
+<td class="align-left">0.002 %</td>
+<td class="align-left">导通锚点</td>
+</tr>
+<tr>
+<td class="align-left">0.8</td>
+<td class="align-left">400</td>
+<td class="align-left">≈0</td>
+<td class="align-left">14.32</td>
+<td class="align-left">9.83</td>
+<td class="align-left">0.186 %</td>
+<td class="align-left">稳定全阻断，无输出</td>
+</tr>
+<tr>
+<td class="align-left">0.8</td>
+<td class="align-left">800</td>
+<td class="align-left">≈0</td>
+<td class="align-left">28.29</td>
+<td class="align-left">12.86</td>
+<td class="align-left">305 %</td>
+<td class="align-left">未进入周期稳态，不下结论</td>
+</tr>
+<tr>
+<td class="align-left">1.0</td>
+<td class="align-left">400</td>
+<td class="align-left">≈0</td>
+<td class="align-left">12.47</td>
+<td class="align-left">8.52</td>
+<td class="align-left">0.254 %</td>
+<td class="align-left">稳定全阻断，无输出</td>
+</tr>
+<tr>
+<td class="align-left">1.0</td>
+<td class="align-left">800</td>
+<td class="align-left">≈0</td>
+<td class="align-left">24.61</td>
+<td class="align-left">13.23</td>
+<td class="align-left">55.9 %</td>
+<td class="align-left">未进入周期稳态，不下结论</td>
+</tr>
+</tbody></table></div>
+<p>电压漂移均 ≤ 2×10⁻⁴ %，说明"近冻结"假设成立。</p>
+<p><strong>这组结果回答了两件事</strong>：</p>
+<ol>
+<li><strong>k=0.5 在 400–800 V 确实存在导通周期解</strong>，Io 由 0.775 A 单调降到 0.203 A，Im 由 15.0 A 升到 24.8 A，周期性 0.002 %。HOGA 在这些坐标上失败的原因是<strong>模式发现</strong>：它能收敛到电流量级几乎相同（Io=0.771 A、Im=15.03 A）的解，但该解的二极管模式为"单只二极管单独导通"，被物理守卫判为非法（反向电流 −0.138 A、法向残差 2.33 V vs 限值 0.40 V）。也就是说，<strong>数值解已接近正确，拓扑结构错误</strong>。</li>
+<li><strong>k=0.8 与 k=1.0 在 400 V 没有输出</strong>（稳定全阻断，周期性 0.19 %/0.25 %），与它们"HOGA 只在 150/100 V 以下可解"的定性趋势一致；800 V 的两个探测未进入周期稳态，只能记为"无结论"，不能写成"阻断"。</li>
+</ol>
+<p><strong>使用边界</strong>：锚点由开关模型单独给出，没有 HOGA 参考解，因此不能计算"HOGA 误差"；它们也不参与 18 次验证记录的统计。图 3 中以空心圆单独标出 k=0.5 的五个锚点，并在图例与注记中说明来源；其余 k 的锚点（全阻断/无稳态）只在文字中报告，不画进充电曲线。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

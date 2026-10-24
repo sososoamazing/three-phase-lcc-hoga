@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>输出特性工作总结（给 GPT 评审用） · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../../index.html">总览</a>
+    <a href="../../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../../docs/04_模型对比结果.html">结果</a>
+    <a href="../../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../../docs/07_局限与证据等级.html">边界</a>
+    <a href="../../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#1-任务与范围">1. 任务与范围</a><a class="lvl2" href="#2-电路与工况">2. 电路与工况</a><a class="lvl2" href="#3-数据是怎么得到的">3. 数据是怎么得到的</a><a class="lvl2" href="#4-主要结果">4. 主要结果</a><a class="lvl3" href="#4-1-汇总-20-点-全部有效">4.1 汇总（20 点，全部有效）</a><a class="lvl3" href="#4-2-输出电流随电压">4.2 输出电流随电压</a><a class="lvl3" href="#4-3-频率与模态">4.3 频率与模态</a><a class="lvl3" href="#4-4-准稳态边界">4.4 准稳态边界</a><a class="lvl2" href="#5-方法与数值可信度">5. 方法与数值可信度</a><a class="lvl2" href="#6-已知问题与未证实项-评审重点">6. 已知问题与未证实项（评审重点）</a><a class="lvl2" href="#7-材料清单">7. 材料清单</a></aside>
+<article class="content">
+<blockquote><strong>归档说明</strong>：本文是原项目报告的公开归档版；数值与结论未改，仅将本机绝对路径替换为占位符、把图片指向本仓库 <code>reports/accuracy_figures/</code>。原文中未随包迁移的内部 CSV/目录链接可能失效；可复现数据以 <code>data/</code> 与 <code>docs/08_文件与证据索引.md</code> 为准。</blockquote>
+<h1 id="输出特性工作总结-给-gpt-评审用">输出特性工作总结（给 GPT 评审用）</h1>
+<p><strong>日期</strong>：2026-10-24 <strong>对象</strong>：50 V 输入、Δ/Y 三相 LCC、0→800 V、AOC 变频充电<strong>主题</strong>：充电全过程的<strong>输出特性</strong>（平均输出电流 Io、谐振电流 RMS/峰值、波形）在多模型下的精度对比</p>
+<hr>
+<h2 id="1-任务与范围">1. 任务与范围</h2>
+<p>本轮的“输出特性”指<strong>充电过程中每个工作点的端口输出量</strong>：</p>
+<ol>
+<li>平均输出电流 $I_o(V_o, f_s)$；</li>
+<li>三相谐振电流 RMS 与峰值；</li>
+<li>谐振电流周期波形（NRMSE）；</li>
+<li>这些量沿 0→800 V AOC 充电轨迹的变化。</li>
+</ol>
+<p>比较对象：</p>
+<ul>
+<li><strong>HOGA-H49</strong>：事件增强高阶广义平均，固定 ±49 阶（99 个谐波索引，直流恒零）；</li>
+<li><strong>EDF</strong>：三相基波 + Cp/六管桥描述函数；</li>
+<li><strong>FHA</strong>：六阶梯钳位 + 纯正弦电流；</li>
+<li><strong>参考</strong>：冻结输出电压的 Simulink 理想开关模型（不是 ODE）。</li>
+</ul>
+<hr>
+<h2 id="2-电路与工况">2. 电路与工况</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-left">值</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">输入 $V_{in}$</td>
+<td class="align-left">50 V</td>
+</tr>
+<tr>
+<td class="align-left">每馈线 $L_s$ / $C_s$</td>
+<td class="align-left">4.7 μH / 135 nF</td>
+</tr>
+<tr>
+<td class="align-left">每 Δ 边 $C_p$</td>
+<td class="align-left">27 nF（节点等效 81 nF）</td>
+</tr>
+<tr>
+<td class="align-left">变压器</td>
+<td class="align-left">三个 1:4，Δ/Y</td>
+</tr>
+<tr>
+<td class="align-left">输出电容</td>
+<td class="align-left">两只 6.25 μF 串联 → 3.125 μF</td>
+</tr>
+<tr>
+<td class="align-left">整流</td>
+<td class="align-left">共用六二极管桥，$V_f=0.6$ V/只</td>
+</tr>
+<tr>
+<td class="align-left">AOC 频率表</td>
+<td class="align-left">59 节点，主段 <strong>241.5905–299.2573 kHz</strong>，0–20 V 用 300 kHz 启动</td>
+</tr>
+<tr>
+<td class="align-left">相电流峰值</td>
+<td class="align-left">低压段约 14 A（研究情景上限）</td>
+</tr>
+</tbody></table></div>
+<p>AOC 实测：<strong>0→800 V = 2.153487 ms</strong>（旧 280–299 kHz 表为 2.596206 ms）。</p>
+<hr>
+<h2 id="3-数据是怎么得到的">3. 数据是怎么得到的</h2>
+<ol>
+<li><strong>AOC 充电</strong>：把 59 节点频率表以阶梯（Flat）注入 <code>AOC_charge.slx</code> 的 <code>Vo→fs</code> 查表，实跑 3.5 ms，记录 Vo、Io、ia/ib/ic、fs、stop_latch。</li>
+<li><strong>20 个采样点</strong>：<code>[0, t800]</code> 时间二十等分取中点，得到 17.4–786.2 V、241.6–299.3 kHz 的 20 个工况。</li>
+<li><strong>冻结参考</strong>：每个点把输出电容替换为两个 $V_o/2$ 理想电压源，固定该点 fs，跑 24 周期至稳态；末周期 8192 点作为参考。相邻周期波形相对差 1.1e-5–4.7e-5。</li>
+<li><strong>三模型求解</strong>：HOGA-H49 用归档事件解作种子重新求解并过十项验收（20/20）；EDF/FHA 用原实现。</li>
+<li><strong>误差</strong>：单点相对误差 $\varepsilon=|X_m-X_{sim}|/|X_{sim}|\times100\%$，MAPE 为 20 点平均。</li>
+</ol>
+<hr>
+<h2 id="4-主要结果">4. 主要结果</h2>
+<h3 id="4-1-汇总-20-点-全部有效">4.1 汇总（20 点，全部有效）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">指标 MAPE</th>
+<th class="align-right">HOGA-H49</th>
+<th class="align-right">EDF</th>
+<th class="align-right">FHA</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">三相平均 RMS</td>
+<td class="align-right"><strong>0.00391%</strong></td>
+<td class="align-right">0.391%</td>
+<td class="align-right">13.027%</td>
+</tr>
+<tr>
+<td class="align-left">平均输出电流 Io</td>
+<td class="align-right"><strong>0.00566%</strong></td>
+<td class="align-right">0.349%</td>
+<td class="align-right">10.921%</td>
+</tr>
+<tr>
+<td class="align-left">三相峰值</td>
+<td class="align-right"><strong>0.0270%</strong></td>
+<td class="align-right">1.573%</td>
+<td class="align-right">13.784%</td>
+</tr>
+<tr>
+<td class="align-left">波形 NRMSE 均值</td>
+<td class="align-right"><strong>0.0307%</strong></td>
+<td class="align-right">2.138%</td>
+<td class="align-right">23.851%</td>
+</tr>
+</tbody></table></div>
+<p>MAE（绝对量）：HOGA 的 RMS/Io/峰值分别为 0.34 mA、0.063 mA、2.49 mA；EDF 为 33.9 mA、4.02 mA、176.7 mA；FHA 为 1.13 A、0.121 A、1.68 A。</p>
+<h3 id="4-2-输出电流随电压">4.2 输出电流随电压</h3>
+<ul>
+<li>Simulink：79.8 V 时 1.8488 A，786.2 V 时 0.8026 A，单调下降；</li>
+<li>HOGA：最大单点误差 0.0164%（673.7 V），全程平坦；</li>
+<li>EDF：0.03–1.17%，在 <strong>379.4 V / 241.59 kHz</strong> 最差（1.171%）；</li>
+<li>FHA：0.06–25.4%，低压大电流段最差（379.4 V：25.4%）。</li>
+</ul>
+<h3 id="4-3-频率与模态">4.3 频率与模态</h3>
+<ul>
+<li>fs 在 20–293 V 约 243.6–244.6 kHz，293–371 V 降到 241.6 kHz，之后升到 299.3 kHz；</li>
+<li>约 379 V 以下为三管区间，420 V 以上为两管区间；20 点全部 CCM，无全截止。</li>
+</ul>
+<h3 id="4-4-准稳态边界">4.4 准稳态边界</h3>
+<p>真实充电周期与冻结波形对比：17.4 V 差 42.2%，79.8 V 差 4.73%，143 V 0.59%，205 V 0.66%，265 V 0.44%，324 V 0.32%，379 V 0.15%，其余 ≤0.11%。</p>
+<hr>
+<h2 id="5-方法与数值可信度">5. 方法与数值可信度</h2>
+<ul>
+<li><strong>参考自身</strong>：3 点加密复核（1e-7 Ω、64 周期）使 Io 变化约 15 μA、RMS 变化 0.1–0.26 mA——这是“数值平台差”；</li>
+<li>HOGA 的 RMS 误差（0.1–0.5 mA）已接近该平台，因此 0.004% 应理解为“与参考在数值平台内一致”，不是物理精度；</li>
+<li>冻结参考用独立事件 ODE 只提供初始状态，不提供任何结果值；</li>
+<li>H49 的十项验收：谱残差、周期闭合、共轭对称、三相零和、事件结构、二极管反向电流、触边/法锥、互补、功率平衡、重构/RMS 一致。</li>
+</ul>
+<hr>
+<h2 id="6-已知问题与未证实项-评审重点">6. 已知问题与未证实项（评审重点）</h2>
+<ol>
+<li><strong>MAPE 的口径</strong>：Io 在个别点可能接近 0（本数据没有），但 MAPE 会被小分母放大；是否需要以 MAE 为主、MAPE 为辅？</li>
+<li><strong>HOGA 的“零误差”</strong>：0.004% 已低于参考平台，如何给出可辩护的误差上界，而不是点估计？</li>
+<li><strong>EDF 在 241.59 kHz 的 1.2%</strong>：是基波假设，还是描述函数在低频大电流下的截断？缺少可判定的分解实验。</li>
+<li><strong>FHA 的失效机理</strong>：低压大电流段误差 4–30%，中高压 8–17%；是整流端口等效、Cp 非导通区间，还是谐波？</li>
+<li><strong>输出特性的工程用途</strong>：AOC 表是 59 点阶梯，是否需要连续 $I_o(V_o,f_s)$ 拟合？拟合误差如何进入充电时间/应力预算？</li>
+<li><strong>准稳态边界</strong>：17.4 V 与 79.8 V 两点是否应改为“瞬态-冻结对照”，而不计入精度统计？</li>
+<li><strong>参考正则</strong>：主参考用 1e-6 Ω，fine 用 1e-7 Ω；mA 级比较是否应统一到 fine？</li>
+<li><strong>采样与统计</strong>：10 点 vs 20 点、等时间 vs 等电压、是否按充电时间加权？</li>
+</ol>
+<hr>
+<h2 id="7-材料清单">7. 材料清单</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>data/accuracy_10points.csv</code></td>
+<td class="align-left">20 点 × 3 模型的逐点量、误差、模态、准静态标志</td>
+</tr>
+<tr>
+<td class="align-left"><code>data/accuracy_summary.csv</code></td>
+<td class="align-left">MAPE/MAE/NRMSE 汇总</td>
+</tr>
+<tr>
+<td class="align-left"><code>data/selected_points.csv</code></td>
+<td class="align-left">20 个点的 t、Vo、fs、dV/周期</td>
+</tr>
+<tr>
+<td class="align-left"><code>data/transient_vs_frozen.csv</code></td>
+<td class="align-left">真实充电周期与冻结波形对照</td>
+</tr>
+<tr>
+<td class="align-left"><code>data/aoc_smooth254_59_nodes.csv</code></td>
+<td class="align-left">59 节点 AOC 频率表（Vo、fs、Io、Ipk、Icomm）</td>
+</tr>
+<tr>
+<td class="align-left"><code>figures/fig1..fig4</code></td>
+<td class="align-left">RMS、Io、峰值、NRMSE 四张图</td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/AOC_20point_accuracy_report.md</code></td>
+<td class="align-left">完整报告</td>
+</tr>
+</tbody></table></div>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

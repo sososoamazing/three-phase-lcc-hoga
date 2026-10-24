@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 交付清单与完成度 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../../index.html">总览</a>
+    <a href="../../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../../docs/04_模型对比结果.html">结果</a>
+    <a href="../../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../../docs/07_局限与证据等级.html">边界</a>
+    <a href="../../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#1-本轮实际完成的工作">1 本轮实际完成的工作</a><a class="lvl2" href="#2-交付物清单">2 交付物清单</a><a class="lvl3" href="#2-1-报告-reports">2.1 报告（`reports/`）</a><a class="lvl3" href="#2-2-图-figures-27-张">2.2 图（`figures/`，27 张）</a><a class="lvl3" href="#2-3-表-tables-21-个-csv">2.3 表（`tables/`，21 个 CSV）</a><a class="lvl3" href="#2-4-数据与验证-继承-本轮补齐">2.4 数据与验证（继承 + 本轮补齐）</a><a class="lvl3" href="#2-5-脚本-scripts">2.5 脚本（`scripts/`）</a><a class="lvl3" href="#2-6-日志-runtime">2.6 日志（`runtime/`）</a><a class="lvl2" href="#3-对照原始任务的完成度">3 对照原始任务的完成度</a><a class="lvl2" href="#4-明确不能声称的内容">4 明确不能声称的内容</a><a class="lvl2" href="#5-复现命令">5 复现命令</a></aside>
+<article class="content">
+<blockquote><strong>归档说明</strong>：本文是原项目报告的公开归档版；数值与结论未改，仅将本机绝对路径替换为占位符、把图片指向本仓库 <code>reports/accuracy_figures/</code>。原文中未随包迁移的内部 CSV/目录链接可能失效；可复现数据以 <code>data/</code> 与 <code>docs/08_文件与证据索引.md</code> 为准。</blockquote>
+<h1 id="06-交付清单与完成度">06 交付清单与完成度</h1>
+<p>交付根目录：<code>$PROJECT_ROOT\MATLAB_PRJ\three_phase\hoga_general_characteristics_20261020</code></p>
+<h2 id="1-本轮实际完成的工作">1 本轮实际完成的工作</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">项</th>
+<th class="align-left">内容</th>
+<th class="align-left">结果</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">阶段 B 续算</td>
+<td class="align-left"><code>runNormalizedStudy('B')</code>，按原 168 点计划续算，已存在检查点（含失败）全部跳过，未重建目录、未覆盖既有结果</td>
+<td class="align-left">补完 41 点：13 点充电解、1 点全阻断族、27 点仍未决；B 阶段 168/168 全部有原始 MAT</td>
+</tr>
+<tr>
+<td class="align-left">阶段 C 恢复扫描</td>
+<td class="align-left">新建 <code>runRecoveryStudy.m</code> + <code>studyPointRecovery.m</code>：跨频率邻点、电压链（含 B/C）、二维最近邻、组内链式延拓、历史种子、faces/support；牛顿上限 100/1500→400/8000（默认值未变）</td>
+<td class="align-left">81 个未决点全部重解：<strong>13 点恢复为充电解</strong>（Vo=0 共 9 点、fn=1.2 的 200–350 V 共 4 点），68 点仍未决</td>
+</tr>
+<tr>
+<td class="align-left">开关模型锚点</td>
+<td class="align-left">对 k=0.5 的 400–800 V、k=0.8/1.0 的 400/800 V 做独立开关探测（初始状态由别的电压缩放，不引用该点 HOGA 解）</td>
+<td class="align-left">k=0.5 五点全部为 0.002 % 周期的导通解；k=0.8/1.0 在 400 V 为稳定全阻断，800 V 未进入周期稳态</td>
+</tr>
+<tr>
+<td class="align-left">横坐标改为谐振腔增益</td>
+<td class="align-left">图 1–6、8 的横轴改为 M = Vo/(nVin)（n=4，Vin=50 V，M=4↔800 V），导出数据同时保留 Vo 与 M 两列</td>
+<td class="align-left">全部重绘并复核</td>
+</tr>
+<tr>
+<td class="align-left">开关验证</td>
+<td class="align-left">在既有 15 次记录基础上新增 3 点：800 V/fn1.5、600 V/fn1.6、350 V/fn1.4/k0.5</td>
+<td class="align-left">3 点全部通过；总记录 18 次、17 通过、1 失败（700 V/fn1.1，保留）</td>
+</tr>
+<tr>
+<td class="align-left">唯一点与覆盖</td>
+<td class="align-left">重写 <code>analyzeNormalizedStudy.py</code>：唯一代表选择、覆盖、输出包络、最大电流轨迹、k 效应、频率自由度、Pareto、交叉区间、验证误差汇总、13 个历史缺失文件审计</td>
+<td class="align-left">344 唯一点、263 通过、190 充电、73 全阻断、81 未决；28 个来源哈希 0 不一致</td>
+</tr>
+<tr>
+<td class="align-left">论文绘图</td>
+<td class="align-left">修复并实跑 <code>plotPaperFigures.m</code>（原脚本从未运行，且存在 pcolor 维度错误、sprintf 转义错误、图例压缩坐标区等问题）</td>
+<td class="align-left">27 张图 × {PDF 矢量, SVG 矢量, 600 dpi PNG, 可编辑 FIG} + 每图 MAT/CSV，共 135 个图文件 + 54 个数据文件</td>
+</tr>
+<tr>
+<td class="align-left">逐图检查</td>
+<td class="align-left">逐张目视并用像素采样核对坐标、单位、未决格、全阻断族、色标与图注不重叠</td>
+<td class="align-left">全部通过；地图改为显式真彩渲染，杜绝"未决被画成小数值"的误读</td>
+</tr>
+<tr>
+<td class="align-left">文档</td>
+<td class="align-left">扫描状态、验证报告、逐图分析、结果与讨论、交付清单</td>
+<td class="align-left">5 份 Markdown</td>
+</tr>
+</tbody></table></div>
+<h2 id="2-交付物清单">2 交付物清单</h2>
+<h3 id="2-1-报告-reports">2.1 报告（<code>reports/</code>）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>01_模型参数拓扑审计.md</code></td>
+<td class="align-left">继承：拓扑、接线、状态变量、电流换算关系（本轮未改动）</td>
+</tr>
+<tr>
+<td class="align-left"><code>02_扫描与求解状态.md</code></td>
+<td class="align-left">参数、来源核验、两阶段统计、验收判据、未决分布、记录缺陷</td>
+</tr>
+<tr>
+<td class="align-left"><code>03_开关模型交叉验证报告.md</code></td>
+<td class="align-left">方法、18 次记录总表、分口径误差、失败记录与开路补验、细步长对照</td>
+</tr>
+<tr>
+<td class="align-left"><code>04_逐图学术分析.md</code></td>
+<td class="align-left">9 张核心/补充图逐图五段式分析 + 18 张验证波形图分析</td>
+</tr>
+<tr>
+<td class="align-left"><code>05_结果与讨论.md</code></td>
+<td class="align-left">论文第 5 章初稿文字（现象—机理—含义—边界）</td>
+</tr>
+<tr>
+<td class="align-left"><code>06_交付清单.md</code></td>
+<td class="align-left">本文件</td>
+</tr>
+</tbody></table></div>
+<h3 id="2-2-图-figures-27-张">2.2 图（<code>figures/</code>，27 张）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">编号</th>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">图 1</td>
+<td class="align-left"><code>Fig01_Io_vs_Vo_by_fn</code></td>
+<td class="align-left">k=0.2 下 8 个 fn 的 Io–M（M=Vo/(nVin)）</td>
+</tr>
+<tr>
+<td class="align-left">图 2</td>
+<td class="align-left"><code>Fig02_Im_vs_Vo_by_fn</code></td>
+<td class="align-left">同条件 Im–M（含全阻断族点线）</td>
+</tr>
+<tr>
+<td class="align-left">图 3</td>
+<td class="align-left"><code>Fig03_capacitance_ratio</code></td>
+<td class="align-left">(a) Io–M、(b) Im–M，六个 k，fn=1.40</td>
+</tr>
+<tr>
+<td class="align-left">图 4</td>
+<td class="align-left"><code>Fig04_Io_operating_map</code></td>
+<td class="align-left">M–fn 二维 Io 图，含换流裕度零线</td>
+</tr>
+<tr>
+<td class="align-left">图 5</td>
+<td class="align-left"><code>Fig05_Im_stress_map</code></td>
+<td class="align-left">M–fn 二维 Im 图</td>
+</tr>
+<tr>
+<td class="align-left">图 6</td>
+<td class="align-left"><code>Fig06_Irms_vs_Vo_by_fn</code></td>
+<td class="align-left">补充：Irms–M</td>
+</tr>
+<tr>
+<td class="align-left">图 7</td>
+<td class="align-left"><code>Fig07_output_stress_tradeoff</code></td>
+<td class="align-left">补充：四个电压断面的 Io–Im 关系</td>
+</tr>
+<tr>
+<td class="align-left">图 8</td>
+<td class="align-left"><code>Fig08_crossing_check</code></td>
+<td class="align-left">补充：550 V 附近交叉核验</td>
+</tr>
+<tr>
+<td class="align-left">图 9</td>
+<td class="align-left"><code>Fig09_capacitance_resonance_shift</code></td>
+<td class="align-left">补充：空载谐振位置随 k 变化</td>
+</tr>
+<tr>
+<td class="align-left">验证</td>
+<td class="align-left"><code>Validation_*</code>（18 张）</td>
+<td class="align-left">每个验证点三相电流 + 输出电流的 HOGA/Simulink 对比</td>
+</tr>
+</tbody></table></div>
+<p>每张图提供 <code>.pdf</code>、<code>.svg</code>、<code>.png</code>（600 dpi）、<code>.fig</code>（可编辑），以及 <code>figures/data/&lt;同名&gt;.csv</code> 与 <code>.mat</code>（该图实际绘制的全部数值）。其中 25 张为全矢量；图 4、图 5 的色块以 600 dpi 位图嵌入 PDF/SVG（坐标、刻度、等值线、标注仍为矢量），原因是 MATLAB 的 painters 渲染器无法可靠地把 NaN 单元渲染成指定灰色，改用显式真彩图像才能保证"未决格"不被误读成小数值。<code>figures/figure_provenance.json</code> 记录绘图环境、数据来源、插值策略与"必要条件非 ZVS"声明。</p>
+<h3 id="2-3-表-tables-21-个-csv">2.3 表（<code>tables/</code>，21 个 CSV）</h3>
+<p>核心：</p>
+<ul>
+<li><code>characteristic_domain.csv</code>：344 个唯一点的完整记录（绘图唯一数据源）</li>
+<li><code>all_solved_points.csv</code>：427 条原始记录（重新 collect 后只含现存 MAT）</li>
+<li><code>all_solved_points_with_history.csv</code>、<code>historical_status_merge_audit.csv</code>：13 个首次失败 A 点缺失文件的审计</li>
+<li><code>frequency_capacitance_coverage.csv</code>：每个 (fn,k) 的粗网格覆盖</li>
+<li><code>fn_output_envelope.csv</code>、<code>maximum_io_envelope.csv</code>：每个 fn 的输出包络、每个电压的最大电流及其对应 fn</li>
+<li><code>capacitance_ratio_effect.csv</code>：六个 k 在 9 个电压上的 Io/Im/Irms 与状态</li>
+<li><code>crossing_brackets.csv</code>：三个交叉变号区间（未插值求根）</li>
+<li><code>pareto_points.csv</code>、<code>matched_requirement_tradeoffs.csv</code>、<code>frequency_freedom_by_voltage.csv</code>：有限采样集合内的输出/应力关系</li>
+<li><code>switching_validation_all.csv</code>、<code>validation_error_summary.csv</code>、<code>switching_numerical_convergence.csv</code>：18 次开关验证的全量与误差</li>
+<li><code>phase_B_remaining_outcome.csv</code>：交接时 41 个待算点的最终状态（27 未决 / 13 充电 / 1 全阻断）</li>
+<li><code>recovery_outcome.csv</code>：阶段 C 对 81 个未决点的逐点结果（13 通过 / 68 未决）、尝试次数、耗时与错误</li>
+<li><code>switch_model_anchors.csv</code>：9 个开关模型锚点（5 个 k=0.5 导通锚点 + 4 个 k=0.8/1.0 探测），含周期性与漂移</li>
+<li><code>stage_A_initial_status.csv</code>：<strong>不可删除</strong>，13 个首次失败原始文件的唯一状态来源</li>
+</ul>
+<h3 id="2-4-数据与验证-继承-本轮补齐">2.4 数据与验证（继承 + 本轮补齐）</h3>
+<ul>
+<li><code>data/A</code>：259 个原始 MAT（阶段 A 计划 272 点，13 个首次失败文件缺失，坐标已由 B 重解）</li>
+<li><code>data/B</code>：168 个原始 MAT（本轮新增 41 个）</li>
+<li><code>data/C</code>：81 个恢复扫描 MAT（阶段 C，与 A/B 同名规则，collectStudy 已纳入；不覆盖任何 A/B 文件）</li>
+<li><code>validation/</code>：18 个 MAT，每个含 <code>trace</code>、<code>cfg</code>、<code>s</code>、<code>record</code></li>
+<li><code>audit/</code>：来源清单、相位标签恢复回执与 33 个归档文件、回归结果、器件与 Qoss/ZVS 报告</li>
+</ul>
+<h3 id="2-5-脚本-scripts">2.5 脚本（<code>scripts/</code>）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">状态</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>runNormalizedStudy.m</code>、<code>studyPoint.m</code>、<code>studyPointRefined.m</code>、<code>studyHoga.m</code>、<code>collectStudy.m</code></td>
+<td class="align-left">继承，本轮未改（除下文列出）</td>
+</tr>
+<tr>
+<td class="align-left"><code>runSwitchingValidation.m</code></td>
+<td class="align-left">修改：<code>cases</code> 增加 3 个验证点；其余逻辑未动</td>
+</tr>
+<tr>
+<td class="align-left"><code>plotPaperFigures.m</code></td>
+<td class="align-left">重写：修正 pcolor 维度、sprintf 转义、图例行列序、地图真彩渲染、每图 MAT/CSV 导出；原版归档于 <code>scripts/archive/plotPaperFigures_20261020_original_never_run.m</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>analyzeNormalizedStudy.py</code></td>
+<td class="align-left">重写：新增唯一域、包络、k 效应、频率自由度、Pareto 扩展、验证误差分口径统计、历史缺失文件审计、阶段 C 恢复统计</td>
+</tr>
+<tr>
+<td class="align-left"><code>runRecoveryStudy.m</code>、<code>studyPointRecovery.m</code></td>
+<td class="align-left">新增：阶段 C 恢复扫描驱动与单点求解（守卫与升阶检查与 <code>studyPointRefined</code> 完全一致）</td>
+</tr>
+<tr>
+<td class="align-left"><code>probeSwitchingPoint.m</code></td>
+<td class="align-left">新增：开关模型锚点探测（无 HOGA 参考解，仅判断是否存在导通周期解）</td>
+</tr>
+<tr>
+<td class="align-left"><code>collectStudy.m</code></td>
+<td class="align-left">修改：聚合 data/C（若存在）</td>
+</tr>
+<tr>
+<td class="align-left"><code>studyHoga.m</code></td>
+<td class="align-left">修改：新增可选 <code>p.solverMaxIterations</code> / <code>p.solverMaxFunctionEvaluations</code>，默认 100/1500 与原文完全一致；复跑三组回归 IoErr ≤2.2e-16，证明默认行为未变</td>
+</tr>
+</tbody></table></div>
+<h3 id="2-6-日志-runtime">2.6 日志（<code>runtime/</code>）</h3>
+<p><code>stage_B_continue.log</code>（本轮续算）、<code>validation_extension.log</code>（本轮 3 个验证点）、<code>stage_A.log</code>、<code>stage_B.log</code>、<code>stage_B_resumed.log</code>、<code>validation_campaign.log</code> 等历史日志。绘图调试脚本（<code>testMapRendering.m</code>、<code>testMap2.m</code>、<code>debugMapCells.m</code>）与 <code>runtime/test_*</code> 已归档到 <code>scripts/archive/debug/</code> 与 <code>runtime/</code>，不参与交付流程。</p>
+<h2 id="3-对照原始任务的完成度">3 对照原始任务的完成度</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">原始要求</th>
+<th class="align-left">状态</th>
+<th class="align-left">说明</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">模型与参数审计报告</td>
+<td class="align-left">完成</td>
+<td class="align-left"><code>reports/01</code>（继承），来源哈希本轮复核</td>
+</tr>
+<tr>
+<td class="align-left">可重复运行的扫描程序</td>
+<td class="align-left">完成</td>
+<td class="align-left">A/B 两入口，B 可从检查点续跑</td>
+</tr>
+<tr>
+<td class="align-left">原始扫描数据与求解状态</td>
+<td class="align-left">完成（有缺陷）</td>
+<td class="align-left">508 条原始记录（A/B/C）；13 个首次失败原始 MAT 缺失，已单列审计</td>
+</tr>
+<tr>
+<td class="align-left">未决点补齐</td>
+<td class="align-left"><strong>部分完成</strong></td>
+<td class="align-left">81 点中 13 点恢复；68 点仍无 HOGA 解。k=0.5 的 9 点已由开关模型证明物理可解，属模式发现问题</td>
+</tr>
+<tr>
+<td class="align-left">五组核心论文图</td>
+<td class="align-left">完成</td>
+<td class="align-left">图 1–图 5，另加图 6–图 9 补充</td>
+</tr>
+<tr>
+<td class="align-left">HOGA 与 Simulink 对比验证</td>
+<td class="align-left">完成（有限覆盖）</td>
+<td class="align-left">18 次、17 通过；k=0.35 与 k=0.8 无验证点；400 V/k0.5 因无 HOGA 参考解未做</td>
+</tr>
+<tr>
+<td class="align-left">参数影响与特性分析文档</td>
+<td class="align-left">完成</td>
+<td class="align-left"><code>reports/04</code>、<code>reports/05</code></td>
+</tr>
+<tr>
+<td class="align-left">论文初稿可用文字</td>
+<td class="align-left">完成</td>
+<td class="align-left"><code>reports/05</code></td>
+</tr>
+<tr>
+<td class="align-left">PDF/SVG/600 dpi/FIG + MAT/CSV</td>
+<td class="align-left">完成</td>
+<td class="align-left">27 张图各 5 种格式 + 每图数据</td>
+</tr>
+<tr>
+<td class="align-left">不插值、不伪造</td>
+<td class="align-left">遵守</td>
+<td class="align-left">未决点保留为空缺；地图灰色格；交叉只报区间</td>
+</tr>
+</tbody></table></div>
+<h2 id="4-明确不能声称的内容">4 明确不能声称的内容</h2>
+<ol>
+<li>不能声称"未决点物理上无解"；不能声称"全阻断族 = 实际充电可达"。<strong>反向同样成立</strong>：k=0.5 的 400–800 V 已被开关模型证明有导通解，不能写成"该 k 无法充到 800 V"。</li>
+<li>开关模型锚点（<code>switch_model_anchors.csv</code>、图 3 空心圆）不是 HOGA 节点，不能计入 HOGA 的通过点、阶数统计或误差统计；它们只证明"存在导通周期解"。</li>
+<li>不能声称任何工作点"实现 ZVS"；只有六次换流电流方向的必要条件。</li>
+<li>不能声称本轮曲线是"任意器件的无损通用图"；Rin、Vf、Δ/Y、n=4 都与具体参考电路绑定。</li>
+<li>不能声称 13 个首次失败 A 点的原始波形仍被保留。</li>
+<li>不能把 <code>switching_validation.csv</code>（最近批次）当作 18 次的总表；总表是 <code>switching_validation_all.csv</code>。</li>
+<li>不能把 <code>tables/all_solved_points.csv</code> 的 508 条当作"唯一点"；唯一域是 <code>characteristic_domain.csv</code>（344 点）。</li>
+<li>不能把 fn=1.00 整列的空缺解释为物理边界；那是串联谐振奇异点附近的求解失败。</li>
+<li>未做：闭环充电动态、损耗与温升、器件级 ZVS 认证、k=0.35 与 k=0.8 的开关验证、从开关波形反演二极管区间再交回 HOGA 的模式修复。</li>
+</ol>
+<h2 id="5-复现命令">5 复现命令</h2>
+<pre class="code"><code class="language-matlab">% 续算（幂等：已存在的检查点跳过）
+addpath('$PROJECT_ROOT/MATLAB_PRJ/three_phase/hoga_general_characteristics_20261020/scripts');
+runNormalizedStudy('B');
+
+% 开关验证（幂等：同名文件复用，不覆盖失败）
+runSwitchingValidation(false);
+
+% 绘图
+plotPaperFigures;</code></pre>
+<pre class="code"><code class="language-text">python scripts/analyzeNormalizedStudy.py</code></pre>
+<p>MATLAB R2024b（<code>$MATLAB</code>），<code>MATLAB_PREFDIR</code> 与并行 JobStorage 均置于本目录 <code>runtime/</code> 内，未修改全局环境。Python 使用 <code>$PYTHON</code>，numpy/scipy 由项目 <code>LCC_HighVoltage_CCM_Study/_50V800V_dependencies/numeric_runtime</code> 提供。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

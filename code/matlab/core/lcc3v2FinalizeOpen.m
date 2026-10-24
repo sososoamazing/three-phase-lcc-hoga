@@ -1,0 +1,16 @@
+function result=lcc3v2FinalizeOpen(result)
+% Recompute open-branch diagnostics after replacing legacy sampled metrics.
+% Uses the existing project's exact gate/Fourier power integral, not a fit.
+if ~contains(result.branch,'all_blocked_nonunique'),return;end
+if ~isfield(result,'before_open_metric_fix')
+    result.before_open_metric_fix=struct('metric',result.metric,'physical_guard_pass',result.physical_guard_pass,'status',result.status);
+end
+result=integrateHogaInput(result);p=result.params;Vd=result.Vo_V+2*p.Vf_rect;
+result.physical_guard_pass=result.converged_algebraic && ...
+    result.metric.normal_max_V<=p.physical_voltage_rel*Vd && ...
+    result.metric.diode_voltage_violation_max_V<=p.physical_voltage_rel*Vd && ...
+    max(abs(result.wave.jSecondary_A),[],'all')<1e-7 && ...
+    abs(result.metric.Irect_mean_A)<1e-8 && ...
+    result.metric.power_relative_residual<=p.physical_power_rel;
+result.status='FAIL';if result.physical_guard_pass,result.status='PASS';end
+end

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据字典 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#data-comparison-20-点四模型比较">`data/comparison/` — 20 点四模型比较</a><a class="lvl2" href="#data-normalized-344-点归一化扫描">`data/normalized/` — 344 点归一化扫描</a><a class="lvl2" href="#data-aoc-0-800-v-aoc-20-点">`data/aoc/` — 0→800 V AOC 20 点</a><a class="lvl2" href="#计数口径">计数口径</a><a class="lvl2" href="#复算示例">复算示例</a></aside>
+<article class="content">
+<h1 id="数据字典">数据字典</h1>
+<p>本目录只保留精选 CSV，完整原始 <code>.mat</code> 没有上传。所有 CSV 均为 UTF-8、逗号分隔、首行表头；空值或 <code>NaN</code> 表示未计算/不适用，不应擅自补零。</p>
+<h2 id="data-comparison-20-点四模型比较"><code>data/comparison/</code> — 20 点四模型比较</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">规模</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>point_results.csv</code></td>
+<td class="align-left">80 行（20 点 × 4 方法）</td>
+<td class="align-left">每条记录的 <code>model, Vo, fs, Io, Po, Irms, Ipeak, time_s, residual, converged, validity, power_residual, blocked_fraction, state_size, algebraic_unknowns, origin, message</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>error_statistics.csv</code></td>
+<td class="align-left">按参考/范围/模型分组</td>
+<td class="align-left"><code>Io_MAE_A, Io_NRMSE_1A, Io_max_abs_A, Irms_MAE_A, ... wave_NRMSE_Ibase</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>port_metrics.csv</code></td>
+<td class="align-left">80 行</td>
+<td class="align-left">分相 RMS/峰值、Cp 峰值、分相输入功率、六个门极边沿电流</td>
+</tr>
+<tr>
+<td class="align-left"><code>harmonic_convergence.csv</code></td>
+<td class="align-left">28 行（4 电压 × 7 阶数）</td>
+<td class="align-left"><code>Vo, H, Io_error_A, Irms_max_error_A, peak_max_error_A, wave_NRMSE_Ibase, time_s, residual, kvl_rms_V</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>convergence_validation.csv</code></td>
+<td class="align-left">4 行</td>
+<td class="align-left">参考精化与 H31 严格验收</td>
+</tr>
+<tr>
+<td class="align-left"><code>simulink_refinement.csv</code></td>
+<td class="align-left">3 行</td>
+<td class="align-left">Simulink coarse/fine 与 ODE 对照</td>
+</tr>
+<tr>
+<td class="align-left"><code>test_results.csv</code></td>
+<td class="align-left">30 项</td>
+<td class="align-left">回归测试结果</td>
+</tr>
+<tr>
+<td class="align-left"><code>open_branch_fix.csv</code></td>
+<td class="align-left">2 行</td>
+<td class="align-left">全截止功率诊断修复前后</td>
+</tr>
+<tr>
+<td class="align-left"><code>efficiency_statistics.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">状态规模/计时口径</td>
+</tr>
+<tr>
+<td class="align-left"><code>matched_benchmark.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">400 V 暖启动计时（HOGA/EDF/FHA/ODE）</td>
+</tr>
+</tbody></table></div>
+<p>关键列：</p>
+<ul>
+<li><code>model</code>：<code>HOGA</code> / <code>EDF</code> / <code>FHA</code> / <code>REFERENCE</code>。</li>
+<li><code>Io</code>：平均输出电流（A）；<code>Po = Vo * Io</code>（W）。</li>
+<li><code>Irms</code>、<code>Ipeak</code>：三相中的最大值（A）；逐相值在 <code>port_metrics.csv</code>。</li>
+<li><code>blocked_fraction</code>：整流桥全截止区间占周期比例；<code>≤1e-5</code> 视为 CCM。</li>
+<li><code>validity</code>：模型自报的有效性/分支标签，不等于独立验收。</li>
+<li><code>power_residual</code>：功率闭合残差（W）；不同模型的定义见报告。</li>
+</ul>
+<h2 id="data-normalized-344-点归一化扫描"><code>data/normalized/</code> — 344 点归一化扫描</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">规模</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>characteristic_domain.csv</code></td>
+<td class="align-left"><strong>344 行</strong></td>
+<td class="align-left">唯一坐标的完整记录；绘图唯一数据源</td>
+</tr>
+<tr>
+<td class="align-left"><code>switching_validation_all.csv</code></td>
+<td class="align-left">18 行</td>
+<td class="align-left">18 次开关模型验证总表</td>
+</tr>
+<tr>
+<td class="align-left"><code>switch_model_anchors.csv</code></td>
+<td class="align-left">9 行</td>
+<td class="align-left">k=0.5/0.8/1.0 的开关锚点（不是 HOGA 点）</td>
+</tr>
+<tr>
+<td class="align-left"><code>validation_error_summary.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">按口径汇总的验证误差</td>
+</tr>
+<tr>
+<td class="align-left"><code>capacitance_ratio_effect.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">六个 k 的 Io/Im/Irms</td>
+</tr>
+<tr>
+<td class="align-left"><code>crossing_brackets.csv</code></td>
+<td class="align-left">3 行</td>
+<td class="align-left">550–600 V 交叉的变号区间（未插值）</td>
+</tr>
+<tr>
+<td class="align-left"><code>frequency_capacitance_coverage.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">(fn,k) 粗网格覆盖</td>
+</tr>
+<tr>
+<td class="align-left"><code>fn_output_envelope.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">每个 fn 的输出包络</td>
+</tr>
+<tr>
+<td class="align-left"><code>maximum_io_envelope.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">每个电压的最大 Io 及对应 fn</td>
+</tr>
+<tr>
+<td class="align-left"><code>pareto_points.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">有限采样的 Pareto 点</td>
+</tr>
+<tr>
+<td class="align-left"><code>matched_requirement_tradeoffs.csv</code></td>
+<td class="align-left">—</td>
+<td class="align-left">输出/应力折中</td>
+</tr>
+<tr>
+<td class="align-left"><code>recovery_outcome.csv</code></td>
+<td class="align-left">81 行</td>
+<td class="align-left">阶段 C 对 81 个未决点的逐点结果（13 通过/68 未决）</td>
+</tr>
+<tr>
+<td class="align-left"><code>phase_B_remaining_outcome.csv</code></td>
+<td class="align-left">41 行</td>
+<td class="align-left">阶段 B 剩余点的最终状态</td>
+</tr>
+</tbody></table></div>
+<p><code>characteristic_domain.csv</code> 关键列：</p>
+<ul>
+<li><code>stage</code>：A/B/C；</li>
+<li><code>Vo_V</code>, <code>M</code>, <code>fn</code>, <code>fs_Hz</code>, <code>k_delta</code>, <code>k_star</code>, <code>Cp_delta_nF</code>；</li>
+<li><code>accepted</code>, <code>physical</code>, <code>order_pass</code>：0/1；</li>
+<li><code>status</code>：<code>ACCEPTED_CCM</code> / <code>OPEN_PERIODIC_FAMILY_NOT_REACHABILITY</code> / <code>UNRESOLVED</code>；</li>
+<li><code>H</code>：31 或 63；</li>
+<li><code>Io_A</code>, <code>Jo</code>, <code>Im_A</code>, <code>Jm</code>, <code>Irms_A</code>, <code>Jrms</code>：输出/应力及归一化值；</li>
+<li><code>Im_a_A</code>, <code>Im_b_A</code>, <code>Im_c_A</code>, <code>Irms_a_A</code>, ...：逐相值；</li>
+<li><code>Im1_A</code>：基波幅值（不是峰值）；</li>
+<li><code>Pout_W</code>, <code>CCM</code>, <code>blocked_fraction</code>；</li>
+<li><code>comm1_A</code>…<code>comm6_A</code>, <code>minimum_comm_margin_A</code>, <code>all_six_polarity</code>：六次换流电流；</li>
+<li><code>zvs_certified</code>：<strong>全为 0</strong>（没有认证）；</li>
+<li><code>event_residual_scaled</code>, <code>normal_max_V</code>, <code>diode_voltage_violation_V</code>, <code>power_residual_relative</code>, <code>closure_scaled</code>：守卫量；</li>
+<li><code>elapsed_s</code>, <code>attempt_count</code>, <code>error</code>：求解记录。</li>
+</ul>
+<p><strong>重要</strong>：<code>accepted=1</code> 只表示本地物理守卫 + 升阶检查通过，不等于独立参考/严格验收。严格验收只有 4 个 H31 点 + H49 AOC 20 点。</p>
+<h2 id="data-aoc-0-800-v-aoc-20-点"><code>data/aoc/</code> — 0→800 V AOC 20 点</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">规模</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>accuracy_10points.csv</code></td>
+<td class="align-left">60 行（20 点 × 3 模型）</td>
+<td class="align-left">逐点 <code>Io/RMS/Peak/NRMSE</code> 与误差（文件名保留历史 <code>10points</code>）</td>
+</tr>
+<tr>
+<td class="align-left"><code>accuracy_summary.csv</code></td>
+<td class="align-left">3 行</td>
+<td class="align-left">三个模型的 MAPE/MAE/NRMSE 汇总</td>
+</tr>
+<tr>
+<td class="align-left"><code>selected_points.csv</code></td>
+<td class="align-left">20 行</td>
+<td class="align-left">20 个点的 <code>t, Vo, fs, dV/周期</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>transient_vs_frozen.csv</code></td>
+<td class="align-left">20 行</td>
+<td class="align-left">真实充电周期 vs 冻结波形的 RMS/Io 差异</td>
+</tr>
+<tr>
+<td class="align-left"><code>aoc_smooth254_59_nodes.csv</code></td>
+<td class="align-left">59 行</td>
+<td class="align-left">AOC 频率表（Vo、fs、Io、Ipk、Icomm）</td>
+</tr>
+</tbody></table></div>
+<p><code>accuracy_10points.csv</code> 关键列：</p>
+<ul>
+<li><code>index</code>：P01–P20；</li>
+<li><code>Vo</code>, <code>fs</code>：该点电压/频率；</li>
+<li><code>model</code>：<code>HOGA_H49</code> / <code>EDF</code> / <code>FHA</code>；</li>
+<li><code>Io_sim</code>, <code>Io_model</code>, <code>Io_error_A</code>, <code>Io_rel_pct</code>；</li>
+<li><code>RMS_sim</code>, <code>RMS_model</code>, <code>RMS_error_A</code>, <code>RMS_rel_pct</code>；</li>
+<li><code>Peak_sim</code>, <code>Peak_model</code>, <code>Peak_error_A</code>, <code>Peak_rel_pct</code>；</li>
+<li><code>NRMSE_pct</code>；</li>
+<li><code>valid</code>：1/0；</li>
+<li><code>blocked_frac_sim</code>：参考的全截止比例；</li>
+<li><code>mode_H49</code>：HOGA 分支标签；</li>
+<li><code>dV_per_period_rel</code>, <code>qs_valid</code>：准静态判据。</li>
+</ul>
+<h2 id="计数口径">计数口径</h2>
+<ul>
+<li>归一化：<strong>508 条原始记录 / 344 唯一点 / 276 通过（203 充电 + 73 全阻断）/ 68 未决</strong>。</li>
+<li>比较：<strong>20 点 × 4 方法 = 80 条</strong>；其中 16 个共同 CCM、4 个非 CCM。</li>
+<li>AOC：<strong>20 点 × 3 模型 = 60 条</strong>。</li>
+<li>旧报告的 263/190/81 是阶段 C 前口径，不要与 276/203/68 混用。</li>
+</ul>
+<h2 id="复算示例">复算示例</h2>
+<pre class="code"><code class="language-python">import pandas as pd
+d = pd.read_csv("data/normalized/characteristic_domain.csv")
+print(d.status.value_counts())
+print(d[d.accepted == 1].H.value_counts())</code></pre>
+<pre class="code"><code class="language-python">import pandas as pd
+e = pd.read_csv("data/comparison/error_statistics.csv")
+print(e[e.scope == "CCM"][["model", "Io_MAE_A", "Irms_MAE_A", "Ipeak_MAE_A"]])</code></pre>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

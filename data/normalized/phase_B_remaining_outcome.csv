@@ -1,0 +1,42 @@
+﻿Vo_V,fn,k_delta,plan_reason,plan_priority,final_status,accepted,Io_A,Im_A,H
+0.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+0.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+25.0,1.9,0.2,voltage-gradient/mode/direction refinement,4,ACCEPTED_CCM,1,0.517892113383241,4.24852934963107,31.0
+25.0,2.0,0.2,voltage-gradient/mode/direction refinement,4,ACCEPTED_CCM,1,0.470488872863851,3.90527980992269,31.0
+75.0,2.0,0.2,voltage-gradient/mode/direction refinement,4,ACCEPTED_CCM,1,0.443288435204517,4.14207699210931,31.0
+100.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.433333599783776,4.27985708826226,31.0
+125.0,1.9,0.2,voltage-gradient/mode/direction refinement,4,ACCEPTED_CCM,1,0.47984462440828,4.7470294637553,31.0
+150.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.472627496930358,4.90561355817805,31.0
+150.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.410965880678207,4.62991261198532,31.0
+200.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.454141337112123,5.33981430572982,31.0
+200.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.379181760728244,5.107909297526,31.0
+225.0,1.9,0.2,voltage-gradient/mode/direction refinement,4,ACCEPTED_CCM,1,0.442847428309767,5.59971577780745,31.0
+250.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.334852893677454,5.68417568144395,31.0
+275.0,1.9,0.2,voltage-gradient/mode/direction refinement,4,ACCEPTED_CCM,1,0.415835354931466,6.16837073635793,31.0
+300.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,ACCEPTED_CCM,1,0.399638408800027,6.47513913332648,31.0
+300.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+350.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+350.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+400.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+400.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+450.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+450.0,2.0,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+475.0,2.0,0.2,voltage-gradient/mode/direction refinement,4,UNRESOLVED,0,nan,nan,31.0
+500.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+500.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+550.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+550.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+600.0,1.7,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+600.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+600.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+650.0,1.7,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+650.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+650.0,1.9,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+675.0,1.9,0.2,voltage-gradient/mode/direction refinement,4,OPEN_PERIODIC_FAMILY_NOT_REACHABILITY,1,1.01872352924879e-16,11.1160070061546,31.0
+700.0,1.7,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+700.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+750.0,1.7,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,63.0
+750.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+800.0,1.4,0.5,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+800.0,1.7,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0
+800.0,1.8,0.2,coarse-point HOGA multi-start/mode recovery,100,UNRESOLVED,0,nan,nan,31.0

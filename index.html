@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三相 LCC 电容充电电源：HOGA 建模资料库（一页式总览） · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="text/markdown" href="ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="index.html">总览</a>
+    <a href="docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="docs/04_模型对比结果.html">结果</a>
+    <a href="docs/05_归一化特性扫描.html">扫描</a>
+    <a href="docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="docs/07_局限与证据等级.html">边界</a>
+    <a href="data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+<section class="hero"><div class="hero-inner">
+  <div class="kicker">50 V → 800 V · Three-Phase Δ/Y LCC · HOGA</div>
+  <h1>三相 LCC 电容充电电源<br>HOGA 建模资料库</h1>
+  <p>事件增强高阶广义平均（HOGA）的公开归档：论文、方法、实现、20 点模型对比、344 点归一化扫描、AOC 0→800 V 充电轨迹验证。</p>
+  <p><span class="badge">HOGA Io MAE 15.579 μA</span><span class="badge">波形 NRMSE 0.0566%</span><span class="badge">344 点扫描</span><span class="badge">无硬件实验</span></p>
+  <div class="links">
+    <a href="docs/00_项目梳理总览.html">项目梳理总览</a>
+    <a href="docs/02_论文精读_HOGA方法.html">论文精读</a>
+    <a href="docs/04_模型对比结果.html">20 点结果</a>
+    <a href="docs/09_GPT阅读指南.html">给 GPT 的读法</a>
+    <a href="paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf">论文 PDF</a>
+  </div>
+</div></section>
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#0-30-秒结论">0. 30 秒结论</a><a class="lvl2" href="#1-研究对象与参数">1. 研究对象与参数</a><a class="lvl2" href="#2-hoga-是什么-论文-vs-本项目">2. HOGA 是什么：论文 vs 本项目</a><a class="lvl3" href="#2-1-论文给的">2.1 论文给的</a><a class="lvl3" href="#2-2-本项目加的">2.2 本项目加的</a><a class="lvl2" href="#3-六维状态与整流约束">3. 六维状态与整流约束</a><a class="lvl2" href="#4-20-点模型对比-主结果">4. 20 点模型对比（主结果）</a><a class="lvl3" href="#4-1-16-个共同-ccm-点">4.1 16 个共同 CCM 点</a><a class="lvl3" href="#4-2-全-20-点-含非-ccm">4.2 全 20 点（含非 CCM）</a><a class="lvl3" href="#4-3-电压扫描-280-khz-a">4.3 电压扫描（280 kHz，A）</a><a class="lvl3" href="#4-4-逐点反例-必须保留">4.4 逐点反例（必须保留）</a><a class="lvl3" href="#4-5-三点-simulink-交叉验证">4.5 三点 Simulink 交叉验证</a><a class="lvl2" href="#5-344-点归一化扫描">5. 344 点归一化扫描</a><a class="lvl3" href="#5-1-计数-阶段-c-后">5.1 计数（阶段 C 后）</a><a class="lvl3" href="#5-2-主要规律">5.2 主要规律</a><a class="lvl3" href="#5-3-开关验证">5.3 开关验证</a><a class="lvl2" href="#6-aoc-0-800-v-充电轨迹-h49">6. AOC 0→800 V 充电轨迹（H49）</a><a class="lvl2" href="#7-证据等级与红线">7. 证据等级与红线</a><a class="lvl3" href="#7-1-证据等级">7.1 证据等级</a><a class="lvl3" href="#7-2-12-条红线">7.2 12 条红线</a><a class="lvl3" href="#7-3-未决问题">7.3 未决问题</a><a class="lvl2" href="#8-文件地图">8. 文件地图</a><a class="lvl2" href="#9-引用">9. 引用</a><a class="lvl2" href="#10-一句话防幻觉">10. 一句话防幻觉</a></aside>
+<article class="content">
+<h1 id="三相-lcc-电容充电电源-hoga-建模资料库-一页式总览">三相 LCC 电容充电电源：HOGA 建模资料库（一页式总览）</h1>
+<p><strong>对象</strong>：50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源（CPS）<br><strong>方法</strong>：事件增强高阶广义平均（HOGA），移动 Fourier 系数 + 六管整流精确事件闭合<br><strong>论文</strong>：H. Li, K. Wang, J. Fang, W. Chen, X. Yang, “High-Order Generalized Averaging Method for Power Electronics Modeling From DC to Above Half the Switching Frequency,” <em>IEEE TPEL</em>, vol. 40, no. 1, pp. 176–194, 2025. DOI: <a href="https://doi.org/10.1109/TPEL.2024.3450712">10.1109/TPEL.2024.3450712</a><br><strong>仓库</strong>：https://github.com/sososoamazing/three-phase-lcc-hoga<br><strong>网页版</strong>：https://sososoamazing.github.io/three-phase-lcc-hoga/</p>
+<hr>
+<h2 id="0-30-秒结论">0. 30 秒结论</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">问题</th>
+<th class="align-left">结论</th>
+<th class="align-left">证据等级</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">HOGA 比 EDF/FHA 准吗？</td>
+<td class="align-left">在本电路、本参数、20 点内，整体明显更准；有逐点反例</td>
+<td class="align-left">独立事件 ODE + 3 点 Simulink</td>
+</tr>
+<tr>
+<td class="align-left">20 点 <code>Io</code> 误差</td>
+<td class="align-left">HOGA <strong>15.579 μA</strong> / EDF 4.284 mA / FHA 90.874 mA（16 个共同 CCM 点的 MAE）</td>
+<td class="align-left">强</td>
+</tr>
+<tr>
+<td class="align-left">波形误差</td>
+<td class="align-left">HOGA <strong>0.0566%</strong> / EDF 1.906% / FHA 22.208%（NRMSE）</td>
+<td class="align-left">强</td>
+</tr>
+<tr>
+<td class="align-left">AOC 0→800 V 全过程</td>
+<td class="align-left">HOGA-H49 <code>Io</code> MAPE <strong>0.00566%</strong>，20/20 有效</td>
+<td class="align-left">中强（冻结参考）</td>
+</tr>
+<tr>
+<td class="align-left">344 点归一化地图</td>
+<td class="align-left"><strong>276 通过 / 203 充电 / 73 全阻断 / 68 未决</strong></td>
+<td class="align-left">中（本地守卫）</td>
+</tr>
+<tr>
+<td class="align-left">能不能说“HOGA 已证明全局最优”？</td>
+<td class="align-left"><strong>不能</strong>。只有局部周期稳态验收，没有唯一性/稳定性证明</td>
+<td class="align-left">—</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="1-研究对象与参数">1. 研究对象与参数</h2>
+<pre class="code"><code class="language-text">Vin(50 V) → 三相三桥臂（120°）→ 每相 Ls 4.7 μH / Cs 135 nF
+→ Δ 接 Cp 27 nF/边 + 三台 1:4 变压器（一次 Δ / 二次 Y 浮空）
+→ 共用六二极管桥 → Co 6.25 μF × 2 串联 = 3.125 μF → Vo 0–800 V</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-right">值</th>
+<th class="align-left">易错点</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Vin</code></td>
+<td class="align-right">50 V</td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>Ls</code> / <code>Cs</code></td>
+<td class="align-right">4.7 μH / 135 nF（每馈线）</td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>Cp_delta</code></td>
+<td class="align-right">27 nF / Δ 边</td>
+<td class="align-left">平衡星等效 81 nF；不是每相 27 nF</td>
+</tr>
+<tr>
+<td class="align-left"><code>n = Ns/Np</code></td>
+<td class="align-right">4</td>
+<td class="align-left">不要再乘 √3</td>
+</tr>
+<tr>
+<td class="align-left"><code>fs</code></td>
+<td class="align-right">280 kHz（基准）</td>
+<td class="align-left">归一化 <code>fn=fs/fr</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>fr</code> / <code>Z0</code></td>
+<td class="align-right">199.804 kHz / 5.9004 Ω</td>
+<td class="align-left">归一化基值</td>
+</tr>
+<tr>
+<td class="align-left"><code>Vf</code></td>
+<td class="align-right">0.6 V/二极管</td>
+<td class="align-left"><code>Vd = Vo + 2Vf</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>Co</code></td>
+<td class="align-right">3.125 μF</td>
+<td class="align-left">两只 6.25 μF 串联；不是 12.5 μF 并联</td>
+</tr>
+<tr>
+<td class="align-left">负载</td>
+<td class="align-right"><strong>无输出负载电阻</strong></td>
+<td class="align-left"><code>Rin=1 mΩ</code> 是输入源串联电阻</td>
+</tr>
+<tr>
+<td class="align-left">死区</td>
+<td class="align-right">0（数学基准）</td>
+<td class="align-left">不是单相 demo 的 100 ns</td>
+</tr>
+</tbody></table></div>
+<p>完整推导见 <a href="docs/01_拓扑与参数.html"><code>docs/01_拓扑与参数.md</code></a>。</p>
+<hr>
+<h2 id="2-hoga-是什么-论文-vs-本项目">2. HOGA 是什么：论文 vs 本项目</h2>
+<h3 id="2-1-论文给的">2.1 论文给的</h3>
+<p>论文（TPEL 2024）用<strong>移动 Fourier 系数</strong>：</p>
+<pre class="code"><code class="language-text">&lt;x&gt;_n(τ) = (1/T) ∫_{τ-T/2}^{τ+T/2} x(t) e^{-jnωt} dt</code></pre>
+<p>关键性质：</p>
+<ul>
+<li>乘法 → 离散卷积 → Toeplitz 矩阵；</li>
+<li>时导 → <code>d&lt;x&gt;_n/dt + jnω&lt;x&gt;_n</code>；</li>
+<li>稳态 → 线性平衡方程；</li>
+<li>小信号 → LTP/LTI，能描述“信号—边带”耦合；</li>
+<li>开关信号用上升/下降时刻建模，覆盖 PWM、PSM、PFM、DCM 二极管等；</li>
+<li>论文用 H=49 在 Boost/Buck/LLC 上验证，能到 <code>fs/2</code> 以上。</li>
+</ul>
+<p>论文的边界：</p>
+<ul>
+<li>假设理想器件、分段线性、周期解存在；</li>
+<li>有限阶截断，截断误差没有定量上界；</li>
+<li>没有三相 Δ/Y LCC，没有共用六管桥，没有大信号充电轨迹。</li>
+</ul>
+<h3 id="2-2-本项目加的">2.2 本项目加的</h3>
+<p>三相 LCC 的二极管事件由状态决定，不能直接用论文的线性平衡方程。本项目做的是<strong>事件增强移动 Fourier 周期稳态</strong>：</p>
+<ul>
+<li>谐振电流用有限复 Fourier 级数（<code>±1…±H</code>，DC=0）；</li>
+<li>二次侧电压在每个导通区间<strong>精确分段积分</strong>，不截断；</li>
+<li>二极管事件时刻 <code>τ_k</code> 和二次侧 DC 电压作为非线性未知量；</li>
+<li>给定事件后，电流系数由线性方程消元；</li>
+<li><code>lsqnonlin</code> 解“周期闭合 + 活动面电压 + 释放/互补”残差；</li>
+<li>物理守卫 + H 阶收敛 + 独立事件 ODE 参考，三层验收。</li>
+</ul>
+<p>一句话：<strong>论文提供多阶移动 Fourier 的理论与开关信号建模；本项目把它落到三相 Δ/Y LCC 的精确整流事件闭合上。</strong></p>
+<p>详见 <a href="docs/02_论文精读_HOGA方法.html"><code>docs/02_论文精读_HOGA方法.md</code></a>、<a href="docs/03_三相LCC_HOGA实现.html"><code>docs/03_三相LCC_HOGA实现.md</code></a>。</p>
+<hr>
+<h2 id="3-六维状态与整流约束">3. 六维状态与整流约束</h2>
+<p>六维差模状态：</p>
+<pre class="code"><code class="language-text">x = [ qα, qβ, sα, sβ, rα, rβ ]^T</code></pre>
+<pre class="code"><code class="language-text">Ls * dq/dt = Vin * p - Rin * p p^T q - s - C r / (3n)
+Cs * ds/dt = q
+(Cp/n^2) * dr/dt = C^T q / (3n) - w
+p = U^T d</code></pre>
+<p>六管整流：</p>
+<pre class="code"><code class="language-text">K = { r : A r ≤ Vd * 1 }
+w ∈ N_K(r)
+io = Σ max(j_a, 0) = (1/2) Σ |j_a|</code></pre>
+<p>允许两管、三管、全截止；全截止存在 DC 代表解族。</p>
+<p>CCM 定义：<strong>整流桥不存在有限时长全截止区间</strong>，不是“谐振电流不过零”。</p>
+<hr>
+<h2 id="4-20-点模型对比-主结果">4. 20 点模型对比（主结果）</h2>
+<p>平台：50 V、Δ/Y、<code>Ls=4.7 μH</code>、<code>Cs=135 nF</code>、<code>Cp=27 nF/Δ边</code>、<code>n=4</code>、<code>Rin=1 mΩ</code>、<code>Vf=0.6 V</code>；冻结 <code>Vo</code>；20 点 = 280 kHz 下 100–800 V（8 点）+ 100/400/800 V 下 240–320 kHz（去重 12 点）。</p>
+<p>主参考：独立事件 ODE（六面 KKT + 周期射击）。Simulink 只做 100/400/800 V 三点。</p>
+<h3 id="4-1-16-个共同-ccm-点">4.1 16 个共同 CCM 点</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">指标</th>
+<th class="align-right">HOGA H31</th>
+<th class="align-right">EDF</th>
+<th class="align-right">FHA</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Io MAE</code></td>
+<td class="align-right"><strong>15.579 μA</strong></td>
+<td class="align-right">4.284 mA</td>
+<td class="align-right">90.874 mA</td>
+</tr>
+<tr>
+<td class="align-left">最大 <code>Io</code> 误差</td>
+<td class="align-right"><strong>72.043 μA</strong></td>
+<td class="align-right">24.321 mA</td>
+<td class="align-right">480.332 mA</td>
+</tr>
+<tr>
+<td class="align-left"><code>Io</code> NRMSE（1 A 基值）</td>
+<td class="align-right"><strong>2.677e-5</strong></td>
+<td class="align-right">7.145e-3</td>
+<td class="align-right">0.1500</td>
+</tr>
+<tr>
+<td class="align-left">RMS MAE</td>
+<td class="align-right"><strong>0.159 mA</strong></td>
+<td class="align-right">32.659 mA</td>
+<td class="align-right">0.924 A</td>
+</tr>
+<tr>
+<td class="align-left">峰值 MAE</td>
+<td class="align-right"><strong>4.838 mA</strong></td>
+<td class="align-right">124.619 mA</td>
+<td class="align-right">1.367 A</td>
+</tr>
+<tr>
+<td class="align-left">波形 NRMSE</td>
+<td class="align-right"><strong>0.0566%</strong></td>
+<td class="align-right">1.9056%</td>
+<td class="align-right">22.2078%</td>
+</tr>
+<tr>
+<td class="align-left">400 V/280 kHz 暖启动</td>
+<td class="align-right">10.876 s</td>
+<td class="align-right">0.0549 s</td>
+<td class="align-right">0.000942 s</td>
+</tr>
+</tbody></table></div>
+<h3 id="4-2-全-20-点-含非-ccm">4.2 全 20 点（含非 CCM）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">指标</th>
+<th class="align-right">HOGA</th>
+<th class="align-right">EDF</th>
+<th class="align-right">FHA</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Io MAE</code></td>
+<td class="align-right"><strong>13.012 μA</strong></td>
+<td class="align-right">3.606 mA</td>
+<td class="align-right">94.229 mA</td>
+</tr>
+<tr>
+<td class="align-left">RMS MAE</td>
+<td class="align-right"><strong>0.134 mA</strong></td>
+<td class="align-right">27.800 mA</td>
+<td class="align-right">0.820 A</td>
+</tr>
+<tr>
+<td class="align-left">峰值 MAE</td>
+<td class="align-right"><strong>5.043 mA</strong></td>
+<td class="align-right">130.282 mA</td>
+<td class="align-right">1.228 A</td>
+</tr>
+<tr>
+<td class="align-left">波形 NRMSE</td>
+<td class="align-right"><strong>0.05698%</strong></td>
+<td class="align-right">1.8372%</td>
+<td class="align-right">25.3309%</td>
+</tr>
+</tbody></table></div>
+<h3 id="4-3-电压扫描-280-khz-a">4.3 电压扫描（280 kHz，A）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right"><code>Vo</code>/V</th>
+<th class="align-right">ODE</th>
+<th class="align-right">HOGA</th>
+<th class="align-right">EDF</th>
+<th class="align-right">FHA</th>
+<th class="align-right">HOGA 误差/μA</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-right">100</td>
+<td class="align-right">1.061984</td>
+<td class="align-right">1.061983</td>
+<td class="align-right">1.063760</td>
+<td class="align-right">1.072815</td>
+<td class="align-right">−0.414</td>
+</tr>
+<tr>
+<td class="align-right">200</td>
+<td class="align-right">1.059532</td>
+<td class="align-right">1.059532</td>
+<td class="align-right">1.061597</td>
+<td class="align-right">1.048075</td>
+<td class="align-right">−0.261</td>
+</tr>
+<tr>
+<td class="align-right">300</td>
+<td class="align-right">1.043356</td>
+<td class="align-right">1.043350</td>
+<td class="align-right">1.045427</td>
+<td class="align-right">1.005665</td>
+<td class="align-right">−5.905</td>
+</tr>
+<tr>
+<td class="align-right">400</td>
+<td class="align-right">1.005770</td>
+<td class="align-right">1.005752</td>
+<td class="align-right">1.005663</td>
+<td class="align-right">0.943206</td>
+<td class="align-right">−18.392</td>
+</tr>
+<tr>
+<td class="align-right">500</td>
+<td class="align-right">0.951217</td>
+<td class="align-right">0.951180</td>
+<td class="align-right">0.948151</td>
+<td class="align-right">0.856328</td>
+<td class="align-right">−37.365</td>
+</tr>
+<tr>
+<td class="align-right">600</td>
+<td class="align-right">0.878736</td>
+<td class="align-right">0.878757</td>
+<td class="align-right">0.872784</td>
+<td class="align-right">0.736445</td>
+<td class="align-right">+20.334</td>
+</tr>
+<tr>
+<td class="align-right">700</td>
+<td class="align-right">0.780969</td>
+<td class="align-right">0.780981</td>
+<td class="align-right">0.774375</td>
+<td class="align-right">0.562872</td>
+<td class="align-right">+12.777</td>
+</tr>
+<tr>
+<td class="align-right">800*</td>
+<td class="align-right">0.639757</td>
+<td class="align-right">0.639768</td>
+<td class="align-right">0.636761</td>
+<td class="align-right">0.238338</td>
+<td class="align-right">+10.884</td>
+</tr>
+</tbody></table></div>
+<p><code>*</code> 800 V 为非 CCM。</p>
+<h3 id="4-4-逐点反例-必须保留">4.4 逐点反例（必须保留）</h3>
+<ol>
+<li><strong>100 V/260 kHz 峰值</strong>：HOGA 9.661 mA，EDF 4.562 mA —— EDF 更准。</li>
+<li><strong>400 V/300 kHz <code>Io</code></strong>：FHA +0.182 mA，EDF +1.609 mA —— FHA 更准；但同点 FHA RMS 误差 0.6149 A，EDF 0.0262 A。</li>
+<li><strong>升阶非单调</strong>：100 V H7→H15 峰值误差 12.462→16.755 mA，H31 12.612 mA；波形 NRMSE 仍从 0.3631% 降到 0.0561%。</li>
+<li><strong>H1≈H3、H7≈H9</strong>：三倍频零序抵消；形式阶数增加不等于新增有效谐波。</li>
+</ol>
+<h3 id="4-5-三点-simulink-交叉验证">4.5 三点 Simulink 交叉验证</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right"><code>Vo</code>/V</th>
+<th class="align-right">ODE <code>Io</code>/A</th>
+<th class="align-right">Simulink fine/A</th>
+<th class="align-right">fine−ODE/μA</th>
+<th class="align-right">相邻周期相对差</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-right">100</td>
+<td class="align-right">1.061983587</td>
+<td class="align-right">1.061976523</td>
+<td class="align-right">−7.064</td>
+<td class="align-right">1.1885e-5</td>
+</tr>
+<tr>
+<td class="align-right">400</td>
+<td class="align-right">1.005769979</td>
+<td class="align-right">1.005751832</td>
+<td class="align-right">−18.147</td>
+<td class="align-right">1.2520e-5</td>
+</tr>
+<tr>
+<td class="align-right">800</td>
+<td class="align-right">0.639757219</td>
+<td class="align-right">0.639743589</td>
+<td class="align-right">−13.630</td>
+<td class="align-right">2.9772e-5</td>
+</tr>
+</tbody></table></div>
+<p>三点最大相对差 0.00213%。<strong>只有 3 点，不是 20 点。</strong></p>
+<p>详见 <a href="docs/04_模型对比结果.html"><code>docs/04_模型对比结果.md</code></a>。</p>
+<hr>
+<h2 id="5-344-点归一化扫描">5. 344 点归一化扫描</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-left">定义</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>fr</code></td>
+<td class="align-left">199.804064 kHz</td>
+</tr>
+<tr>
+<td class="align-left"><code>Z0</code></td>
+<td class="align-left">5.900408 Ω</td>
+</tr>
+<tr>
+<td class="align-left"><code>fn</code></td>
+<td class="align-left"><code>fs/fr</code>，1.0–2.0</td>
+</tr>
+<tr>
+<td class="align-left"><code>k</code></td>
+<td class="align-left"><code>Cp_delta/Cs</code>，0.1 / 0.2 / 0.35 / 0.5 / 0.8 / 1.0</td>
+</tr>
+<tr>
+<td class="align-left"><code>M</code></td>
+<td class="align-left"><code>Vo/(nVin)</code>，0–4</td>
+</tr>
+</tbody></table></div>
+<h3 id="5-1-计数-阶段-c-后">5.1 计数（阶段 C 后）</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">项</th>
+<th class="align-right">数</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">原始记录</td>
+<td class="align-right">508（A 259 + B 168 + C 81）</td>
+</tr>
+<tr>
+<td class="align-left">唯一坐标</td>
+<td class="align-right">344</td>
+</tr>
+<tr>
+<td class="align-left">通过</td>
+<td class="align-right"><strong>276</strong></td>
+</tr>
+<tr>
+<td class="align-left">其中充电 CCM</td>
+<td class="align-right"><strong>203</strong></td>
+</tr>
+<tr>
+<td class="align-left">其中全阻断周期族</td>
+<td class="align-right"><strong>73</strong></td>
+</tr>
+<tr>
+<td class="align-left">未决</td>
+<td class="align-right"><strong>68</strong></td>
+</tr>
+<tr>
+<td class="align-left">通过点 H31 / H63</td>
+<td class="align-right">257 / 19</td>
+</tr>
+</tbody></table></div>
+<blockquote>旧报告里的 263/190/81 是阶段 C 前口径；以 <code>data/normalized/characteristic_domain.csv</code> 和 <code>reports/normalized/02_扫描与求解状态.md</code> 为准。</blockquote>
+<h3 id="5-2-主要规律">5.2 主要规律</h3>
+<ol>
+<li><code>Io</code> 随 <code>Vo</code> 单调下降；电压上限由 <code>fn</code> 决定。<code>k=0.2</code> 时只有 <code>fn=1.5</code> 覆盖到 800 V；<code>fn=1.4</code> 到 750 V，<code>fn=1.3</code> 到 600 V，<code>fn=1.1</code> 只到 400 V。</li>
+<li><code>fn=1.0</code> 整列没有可验收充电解（9 全阻断 + 8 未决），是串联谐振点数值奇异，<strong>不是物理边界</strong>。</li>
+<li><code>Im</code> 在低压低频最大：<strong>28.755 A</strong> @ 25 V/fn1.10/k0.2。</li>
+<li>550–600 V 有频率次序反转；只给变号区间，不插值求根。</li>
+<li><code>k</code> 增大使高压段电流下降、环流上升；<code>k≈0.2</code> 适合 800 V（末端 0.800 A），<code>k≈0.35</code> 适合 400 V（1.020 A），<code>k≥0.8</code> 可用区间 &lt;200 V。</li>
+<li>调频降低绝对应力，但不改善 <code>Im/Io</code>（100 V 由 7.4 升到 9.9；400 V 由 8.4 升到 13.8）。</li>
+</ol>
+<h3 id="5-3-开关验证">5.3 开关验证</h3>
+<p>18 次记录，17 通过。通过点最大值：<code>Io</code> 0.0620%、<code>Im</code> 0.623%、<code>Irms</code> 0.0159%、波形 L2 0.232%。<code>k=0.5</code> 在 400–800 V 有开关锚点（Io 0.775→0.203 A，Im 15.0→24.8 A），但 HOGA 在该段未决——属<strong>模式发现问题</strong>，不是物理无解。</p>
+<p>详见 <a href="docs/05_归一化特性扫描.html"><code>docs/05_归一化特性扫描.md</code></a>。</p>
+<hr>
+<h2 id="6-aoc-0-800-v-充电轨迹-h49">6. AOC 0→800 V 充电轨迹（H49）</h2>
+<ul>
+<li>AOC 表 59 节点，主段 241.5905–299.2573 kHz，0–20 V 用 300 kHz 启动。</li>
+<li>真实充电 <code>t800 = 2.153487 ms</code>。</li>
+<li>20 点在 <code>[0,t800]</code> 时间等分取中点；每点冻结 <code>Vo</code>，Simulink 跑 24 周期，末周期 8192 点。</li>
+<li>HOGA-H49 20/20 通过十项验收。</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">指标 MAPE</th>
+<th class="align-right">HOGA-H49</th>
+<th class="align-right">EDF</th>
+<th class="align-right">FHA</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">RMS</td>
+<td class="align-right"><strong>0.00391%</strong></td>
+<td class="align-right">0.391%</td>
+<td class="align-right">13.027%</td>
+</tr>
+<tr>
+<td class="align-left"><code>Io</code></td>
+<td class="align-right"><strong>0.00566%</strong></td>
+<td class="align-right">0.349%</td>
+<td class="align-right">10.921%</td>
+</tr>
+<tr>
+<td class="align-left">峰值</td>
+<td class="align-right"><strong>0.0270%</strong></td>
+<td class="align-right">1.573%</td>
+<td class="align-right">13.784%</td>
+</tr>
+<tr>
+<td class="align-left">波形 NRMSE 均值</td>
+<td class="align-right"><strong>0.0307%</strong></td>
+<td class="align-right">2.138%</td>
+<td class="align-right">23.851%</td>
+</tr>
+</tbody></table></div>
+<p>最差点：</p>
+<ul>
+<li>EDF：379.4 V / 241.59 kHz，<code>Io</code> 1.171%、RMS 1.256%。</li>
+<li>FHA：同点，<code>Io</code> 25.37%、RMS 30.39%。</li>
+<li>HOGA：<code>Io</code> 最大 0.01638% @ 673.7 V；峰值最大 0.3299% @ 17.4 V。</li>
+</ul>
+<p>准静态边界：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-right"><code>Vo</code>/V</th>
+<th class="align-right">RMS 差</th>
+<th class="align-right"><code>Io</code> 差</th>
+<th class="align-left">准静态</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-right">17.4</td>
+<td class="align-right">42.17%</td>
+<td class="align-right">43.85%</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-right">79.8</td>
+<td class="align-right">4.735%</td>
+<td class="align-right">4.880%</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-right">143.1</td>
+<td class="align-right">0.593%</td>
+<td class="align-right">0.670%</td>
+<td class="align-left">边缘</td>
+</tr>
+<tr>
+<td class="align-right">205.4</td>
+<td class="align-right">0.662%</td>
+<td class="align-right">0.739%</td>
+<td class="align-left">边缘</td>
+</tr>
+<tr>
+<td class="align-right">≥265</td>
+<td class="align-right">≤0.444%</td>
+<td class="align-right">≤0.504%</td>
+<td class="align-left">是</td>
+</tr>
+</tbody></table></div>
+<p>所以 17.4 V、79.8 V 只能作“瞬态–冻结对照”，不能计入准静态精度统计。</p>
+<p>详见 <a href="docs/06_充电轨迹_AOC.html"><code>docs/06_充电轨迹_AOC.md</code></a>。</p>
+<hr>
+<h2 id="7-证据等级与红线">7. 证据等级与红线</h2>
+<h3 id="7-1-证据等级">7.1 证据等级</h3>
+<ul>
+<li><strong>E1 硬件实验</strong>：没有。</li>
+<li><strong>E2 详细开关仿真</strong>：3 点 Simulink + 18 次开关验证 + AOC 20 点冻结参考。</li>
+<li><strong>E3 独立事件 ODE</strong>：20 点主参考；与 HOGA 共享物理假设，不是实验真值。</li>
+<li><strong>E4 HOGA 严格验收</strong>：4 点 H31；H49 AOC 20 点。</li>
+<li><strong>E5 HOGA 本地守卫</strong>：20 点 + 344 点扫描中的 276 点。</li>
+<li><strong>E6 EDF/FHA</strong>：近似模型。</li>
+</ul>
+<h3 id="7-2-12-条红线">7.2 12 条红线</h3>
+<ol>
+<li>未决 ≠ 无解。</li>
+<li>全阻断族 ≠ 实际充电可达。</li>
+<li>换流电流为正 ≠ ZVS。</li>
+<li>单相 <code>v_Cp=±Vo/n</code> 平台 ≠ 本拓扑。</li>
+<li>文献 12 区间 ≠ 本项目应然数量。</li>
+<li>20 点不都是 Simulink（只有 3 点）。</li>
+<li>升阶不保证单调改善。</li>
+<li>平均量准 ≠ 波形/应力准。</li>
+<li>HOGA 0.004% 不是物理精度（参考平台 15 μA/0.2 mA）。</li>
+<li>AOC 频率表不是硬件最优。</li>
+<li>文件名 <code>ideal</code> 不代表全部理想（二极管 <code>Vf=eps</code>）。</li>
+<li><code>k=0.5</code> 的 350 V 不是物理边界。</li>
+</ol>
+<h3 id="7-3-未决问题">7.3 未决问题</h3>
+<ul>
+<li>补三路 <code>V_p</code> 传感器；</li>
+<li>提高时间分辨率，验证 12 联合区间内的换相重叠；</li>
+<li>50→800 V 全程钳位/区间宽度扫描；</li>
+<li>B/C 相模态表；</li>
+<li>ZVS 器件级判定；</li>
+<li>k=0.5 高压段模式发现；</li>
+<li>闭环充电 + 损耗/温升；</li>
+<li>文献统计重数。</li>
+</ul>
+<p>详见 <a href="docs/07_局限与证据等级.html"><code>docs/07_局限与证据等级.md</code></a>。</p>
+<hr>
+<h2 id="8-文件地图">8. 文件地图</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">想看</th>
+<th class="align-left">文件</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">全项目梳理</td>
+<td class="align-left"><a href="docs/00_项目梳理总览.html"><code>docs/00_项目梳理总览.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">拓扑/参数</td>
+<td class="align-left"><a href="docs/01_拓扑与参数.html"><code>docs/01_拓扑与参数.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">论文精读</td>
+<td class="align-left"><a href="docs/02_论文精读_HOGA方法.html"><code>docs/02_论文精读_HOGA方法.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">实现细节</td>
+<td class="align-left"><a href="docs/03_三相LCC_HOGA实现.html"><code>docs/03_三相LCC_HOGA实现.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">20 点结果</td>
+<td class="align-left"><a href="docs/04_模型对比结果.html"><code>docs/04_模型对比结果.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">344 点扫描</td>
+<td class="align-left"><a href="docs/05_归一化特性扫描.html"><code>docs/05_归一化特性扫描.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">AOC</td>
+<td class="align-left"><a href="docs/06_充电轨迹_AOC.html"><code>docs/06_充电轨迹_AOC.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">局限/红线</td>
+<td class="align-left"><a href="docs/07_局限与证据等级.html"><code>docs/07_局限与证据等级.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">数据字典</td>
+<td class="align-left"><a href="data/README.html"><code>data/README.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">代码地图</td>
+<td class="align-left"><a href="code/README.html"><code>code/README.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">模型</td>
+<td class="align-left"><a href="models/README.html"><code>models/README.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">报告归档</td>
+<td class="align-left"><a href="reports/README.html"><code>reports/README.md</code></a></td>
+</tr>
+<tr>
+<td class="align-left">论文 PDF</td>
+<td class="align-left"><a href="paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf"><code>paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code></a></td>
+</tr>
+<tr>
+<td class="align-left">GPT 阅读指南</td>
+<td class="align-left"><a href="docs/09_GPT阅读指南.html"><code>docs/09_GPT阅读指南.md</code></a></td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="9-引用">9. 引用</h2>
+<pre class="code"><code class="language-bibtex">@misc{LCC3HOGA2026,
+  title  = {Three-Phase LCC Capacitor Charger: HOGA Modeling Archive},
+  year   = {2026},
+  note   = {GitHub repository},
+  url    = {https://github.com/sososoamazing/three-phase-lcc-hoga}
+}
+
+@article{Li2025HOGA,
+  author  = {Li, Hongchang and Wang, Kangping and Fang, Jingyang and Chen, Wenjie and Yang, Xu},
+  title   = {High-Order Generalized Averaging Method for Power Electronics Modeling From {DC} to Above Half the Switching Frequency},
+  journal = {IEEE Transactions on Power Electronics},
+  year    = {2025},
+  volume  = {40},
+  number  = {1},
+  pages   = {176--194},
+  doi     = {10.1109/TPEL.2024.3450712}
+}</code></pre>
+<hr>
+<h2 id="10-一句话防幻觉">10. 一句话防幻觉</h2>
+<blockquote>本资料库中的“未决”不等于“无解”，“全阻断族”不等于“实际充电可达”，“换流电流为正”不等于“ZVS”，“HOGA 与参考一致”不等于“物理精度”。资料没有给出的数，请说“未给出”。</blockquote>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

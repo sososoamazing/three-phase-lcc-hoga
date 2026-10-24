@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three-Phase LCC Capacitor Charger — HOGA Modeling Archive · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="text/markdown" href="ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="index.html">总览</a>
+    <a href="docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="docs/04_模型对比结果.html">结果</a>
+    <a href="docs/05_归一化特性扫描.html">扫描</a>
+    <a href="docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="docs/07_局限与证据等级.html">边界</a>
+    <a href="data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#快速入口">快速入口</a><a class="lvl2" href="#30-秒结论">30 秒结论</a><a class="lvl2" href="#研究对象">研究对象</a><a class="lvl2" href="#仓库结构">仓库结构</a><a class="lvl2" href="#论文">论文</a><a class="lvl2" href="#如何阅读-人类-gpt">如何阅读（人类 / GPT）</a><a class="lvl3" href="#人类">人类</a><a class="lvl3" href="#chatgpt-网页端">ChatGPT 网页端</a><a class="lvl2" href="#复现">复现</a><a class="lvl2" href="#边界-必读">边界（必读）</a><a class="lvl2" href="#许可">许可</a><a class="lvl2" href="#引用">引用</a></aside>
+<article class="content">
+<h1 id="three-phase-lcc-capacitor-charger-hoga-modeling-archive">Three-Phase LCC Capacitor Charger — HOGA Modeling Archive</h1>
+<p><strong>50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA（高阶广义平均）建模公开资料库。</strong></p>
+<p>本仓库梳理了原项目中的三相 LCC HOGA 资产：理论来源（TPEL 2024 论文）、事件增强 HOGA 实现、20 点四模型精度比较、344 点归一化特性扫描、AOC 0→800 V 充电轨迹验证，以及对应的数据、图和可复现说明。</p>
+<blockquote>这不是完整项目镜像，也不是硬件实验报告。原始 508 个 <code>.mat</code> 波形、<code>runtime/</code> 缓存、内部协作记录没有上传。所有“未决/全阻断/ZVS/损耗”边界见 <a href="docs/07_局限与证据等级.html"><code>docs/07_局限与证据等级.md</code></a>。</blockquote>
+<hr>
+<h2 id="快速入口">快速入口</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">入口</th>
+<th class="align-left">适合</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><strong><a href="ONE_PAGE.html">一页式总览 ONE_PAGE.md</a></strong></td>
+<td class="align-left">想一次看懂全部关键结论</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/00_项目梳理总览.html">项目梳理总览</a></strong></td>
+<td class="align-left">想看“整个项目怎么梳理”的</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/02_论文精读_HOGA方法.html">论文精读</a></strong></td>
+<td class="align-left">想看 TPEL 2024 论文与本项目的关系</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/03_三相LCC_HOGA实现.html">实现细节</a></strong></td>
+<td class="align-left">想看事件增强 HOGA 的未知量/残差/守卫</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/04_模型对比结果.html">20 点结果</a></strong></td>
+<td class="align-left">想看 HOGA/EDF/FHA 精度表</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/05_归一化特性扫描.html">344 点扫描</a></strong></td>
+<td class="align-left">想看 fn/k 工作域</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/06_充电轨迹_AOC.html">AOC 充电轨迹</a></strong></td>
+<td class="align-left">想看 0→800 V 全过程精度</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="docs/09_GPT阅读指南.html">GPT 阅读指南</a></strong></td>
+<td class="align-left">想让 ChatGPT 网页端读取/提问</td>
+</tr>
+<tr>
+<td class="align-left"><strong><a href="paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf">论文 PDF</a></strong></td>
+<td class="align-left">需要原文</td>
+</tr>
+</tbody></table></div>
+<p>网页版（GitHub Pages）：<strong>https://sososoamazing.github.io/three-phase-lcc-hoga/</strong></p>
+<hr>
+<h2 id="30-秒结论">30 秒结论</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">问题</th>
+<th class="align-left">结论</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">HOGA 比 EDF/FHA 准吗？</td>
+<td class="align-left">在本电路、本参数、20 点内整体明显更准；有逐点反例</td>
+</tr>
+<tr>
+<td class="align-left">16 个共同 CCM 点的 <code>Io MAE</code></td>
+<td class="align-left"><strong>HOGA 15.579 μA</strong> / EDF 4.284 mA / FHA 90.874 mA</td>
+</tr>
+<tr>
+<td class="align-left">波形 NRMSE</td>
+<td class="align-left"><strong>HOGA 0.0566%</strong> / EDF 1.906% / FHA 22.208%</td>
+</tr>
+<tr>
+<td class="align-left">AOC 20 点 <code>Io</code> MAPE</td>
+<td class="align-left"><strong>HOGA-H49 0.00566%</strong>（20/20 有效）</td>
+</tr>
+<tr>
+<td class="align-left">344 点扫描</td>
+<td class="align-left"><strong>276 通过 / 203 充电 / 73 全阻断 / 68 未决</strong></td>
+</tr>
+<tr>
+<td class="align-left">证据等级</td>
+<td class="align-left">独立事件 ODE + 3 点 Simulink；<strong>没有硬件实验</strong></td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="研究对象">研究对象</h2>
+<pre class="code"><code class="language-text">Vin(50 V) → 三相三桥臂（120°）→ 每相 Ls 4.7 μH / Cs 135 nF
+→ Δ 接 Cp 27 nF/边 + 三台 1:4 变压器（一次 Δ / 二次 Y 浮空）
+→ 共用六二极管桥 → Co 6.25 μF × 2 串联 = 3.125 μF → Vo 0–800 V</code></pre>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-right">值</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Vin</code></td>
+<td class="align-right">50 V</td>
+</tr>
+<tr>
+<td class="align-left"><code>Ls</code> / <code>Cs</code></td>
+<td class="align-right">4.7 μH / 135 nF（每馈线）</td>
+</tr>
+<tr>
+<td class="align-left"><code>Cp_delta</code></td>
+<td class="align-right">27 nF / Δ 边</td>
+</tr>
+<tr>
+<td class="align-left"><code>n = Ns/Np</code></td>
+<td class="align-right">4</td>
+</tr>
+<tr>
+<td class="align-left"><code>fs</code></td>
+<td class="align-right">280 kHz（基准）</td>
+</tr>
+<tr>
+<td class="align-left"><code>fr</code> / <code>Z0</code></td>
+<td class="align-right">199.804 kHz / 5.9004 Ω</td>
+</tr>
+<tr>
+<td class="align-left"><code>Vf</code></td>
+<td class="align-right">0.6 V/二极管</td>
+</tr>
+<tr>
+<td class="align-left"><code>Co</code></td>
+<td class="align-right">3.125 μF</td>
+</tr>
+</tbody></table></div>
+<p>参数与易错点见 <a href="docs/01_拓扑与参数.html"><code>docs/01_拓扑与参数.md</code></a>。</p>
+<hr>
+<h2 id="仓库结构">仓库结构</h2>
+<pre class="code"><code class="language-text">.
+├─ ONE_PAGE.md                 # 一页式总览（LLM 友好）
+├─ index.html                  # GitHub Pages 单页
+├─ llms.txt                    # 给 LLM/爬虫的 URL 索引
+├─ docs/                       # 00–09 深度文档
+├─ paper/                      # TPEL 2024 论文 PDF + 引用/许可
+├─ reports/                    # 原项目报告归档（已清洗路径）
+├─ data/                       # 精选 CSV（comparison / normalized / aoc）
+├─ figures/                    # 精选图
+├─ code/                       # HOGA/EDF/FHA/验证代码
+├─ models/                     # 关键 SLX 模型
+├─ tools/                      # 站点构建 + 仓库校验
+├─ SHA256SUMS.txt              # 文件哈希
+├─ CITATION.cff
+├─ LICENSE                     # 代码 MIT
+└─ LICENSE_DOCS.md             # 原创文档 CC BY 4.0</code></pre>
+<p>完整文件映射见 <a href="docs/08_文件与证据索引.html"><code>docs/08_文件与证据索引.md</code></a>。</p>
+<hr>
+<h2 id="论文">论文</h2>
+<p><strong>H. Li, K. Wang, J. Fang, W. Chen, X. Yang</strong>, “High-Order Generalized Averaging Method for Power Electronics Modeling From DC to Above Half the Switching Frequency,” <em>IEEE Transactions on Power Electronics</em>, vol. 40, no. 1, pp. 176–194, Jan. 2025.</p>
+<ul>
+<li>DOI: <a href="https://doi.org/10.1109/TPEL.2024.3450712">10.1109/TPEL.2024.3450712</a></li>
+<li>本仓库 PDF：<code>paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code></li>
+<li>许可：论文页脚标注 <strong>CC BY-NC-ND 4.0</strong>；PDF 原样分发，不改动。</li>
+<li>方法笔记：<code>docs/02_论文精读_HOGA方法.md</code></li>
+</ul>
+<hr>
+<h2 id="如何阅读-人类-gpt">如何阅读（人类 / GPT）</h2>
+<h3 id="人类">人类</h3>
+<ol>
+<li><a href="ONE_PAGE.html"><code>ONE_PAGE.md</code></a>（10 分钟）</li>
+<li><a href="docs/00_项目梳理总览.html"><code>docs/00_项目梳理总览.md</code></a>（20 分钟）</li>
+<li><a href="docs/04_模型对比结果.html"><code>docs/04_模型对比结果.md</code></a> + <a href="docs/05_归一化特性扫描.html"><code>docs/05_归一化特性扫描.md</code></a>（40 分钟）</li>
+<li>需要细节时再看 <code>reports/</code> 与 <code>data/</code>。</li>
+</ol>
+<h3 id="chatgpt-网页端">ChatGPT 网页端</h3>
+<ul>
+<li>直接给它 <strong>GitHub Pages</strong>：https://sososoamazing.github.io/three-phase-lcc-hoga/</li>
+<li>如果它只看到目录，给它 <strong>raw ONE_PAGE</strong>：</li>
+</ul>
+<p>  <code>https://raw.githubusercontent.com/sososoamazing/three-phase-lcc-hoga/main/ONE_PAGE.md</code></p>
+<ul>
+<li>现成提示词见 <a href="docs/09_GPT阅读指南.html"><code>docs/09_GPT阅读指南.md</code></a>。</li>
+</ul>
+<hr>
+<h2 id="复现">复现</h2>
+<p>本仓库保留了核心 MATLAB 代码和精选 CSV，但没有完整原始 <code>.mat</code>。因此：</p>
+<ul>
+<li><strong>能做的</strong>：读代码、对照公式、用 CSV 复算统计、用 <code>tools/build_site.py</code> 重建站点。</li>
+<li><strong>不能直接做的</strong>：从零重跑 20 点/344 点扫描（需要原工作区的 <code>data/A|B|C</code> 与 <code>validation/</code> 原始 MAT）。</li>
+</ul>
+<pre class="code"><code class="language-matlab">% 代码路径（示例）
+addpath('code/matlab/core');
+addpath('code/matlab/accelerated');
+addpath('code/matlab/comparison');</code></pre>
+<pre class="code"><code class="language-text">python tools/build_site.py     # 重建 index.html
+python tools/verify_package.py # 校验链接与 SHA256SUMS</code></pre>
+<p>详见 <a href="code/README.html"><code>code/README.md</code></a>、<a href="reports/README.html"><code>reports/README.md</code></a>。</p>
+<hr>
+<h2 id="边界-必读">边界（必读）</h2>
+<ul>
+<li>这是<strong>冻结周期稳态</strong>比较，不是连续充电动态；AOC 是逐点冻结的准静态验证。</li>
+<li>68 个未决点不能写成“物理无解”；<code>k=0.5</code> 的 9 点已被开关模型证明存在导通解。</li>
+<li>全阻断族不是“实际充电可达”；换流电流为正不是“ZVS”。</li>
+<li>20 点里只有 3 点有 Simulink 对照；其余是独立事件 ODE。</li>
+<li>HOGA 的 0.004% 已接近参考数值平台（15 μA / 0.2 mA），不是物理精度。</li>
+<li>没有硬件实验、损耗/温升、闭环充电、器件级 ZVS、磁件验证。</li>
+</ul>
+<p>完整红线见 <a href="docs/07_局限与证据等级.html"><code>docs/07_局限与证据等级.md</code></a>。</p>
+<hr>
+<h2 id="许可">许可</h2>
+<ul>
+<li>代码：MIT，见 <a href="LICENSE"><code>LICENSE</code></a>。</li>
+<li>本仓库原创文档/图/表：CC BY 4.0，见 <a href="LICENSE_DOCS.html"><code>LICENSE_DOCS.md</code></a>。</li>
+<li>论文 PDF：CC BY-NC-ND 4.0，版权归作者/IEEE；见 <a href="paper/README.html"><code>paper/README.md</code></a>。</li>
+<li>原项目报告/数据：按原项目约定；本仓库只做公开归档，不改变原作者权利。</li>
+</ul>
+<hr>
+<h2 id="引用">引用</h2>
+<pre class="code"><code class="language-bibtex">@misc{LCC3HOGA2026,
+  title  = {Three-Phase LCC Capacitor Charger: HOGA Modeling Archive},
+  year   = {2026},
+  note   = {GitHub repository},
+  url    = {https://github.com/sososoamazing/three-phase-lcc-hoga}
+}</code></pre>
+<p>论文引用见 <a href="CITATION.cff"><code>CITATION.cff</code></a> 与 <a href="docs/02_论文精读_HOGA方法.html"><code>docs/02_论文精读_HOGA方法.md</code></a>。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

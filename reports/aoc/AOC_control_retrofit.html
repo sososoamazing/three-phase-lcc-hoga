@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>在 ideal_three_phase_LCC 上增加的 AOC 控制（说明） · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../../index.html">总览</a>
+    <a href="../../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../../docs/04_模型对比结果.html">结果</a>
+    <a href="../../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../../docs/07_局限与证据等级.html">边界</a>
+    <a href="../../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#改了什么">改了什么</a><a class="lvl2" href="#实测验证-器件保持原模型的理想值-ron-eps-vf-eps">实测验证（器件保持原模型的理想值 Ron=eps、Vf=eps）</a><a class="lvl2" href="#怎么用">怎么用</a><a class="lvl2" href="#注意">注意</a></aside>
+<article class="content">
+<blockquote><strong>归档说明</strong>：本文是原项目报告的公开归档版；数值与结论未改，仅将本机绝对路径替换为占位符、把图片指向本仓库 <code>reports/accuracy_figures/</code>。原文中未随包迁移的内部 CSV/目录链接可能失效；可复现数据以 <code>data/</code> 与 <code>docs/08_文件与证据索引.md</code> 为准。</blockquote>
+<h1 id="在-ideal_three_phase_lcc-上增加的-aoc-控制-说明">在 ideal_three_phase_LCC 上增加的 AOC 控制（说明）</h1>
+<p><strong>目标模型</strong>：<code>MATLAB_PRJ/three_phase/simulink/ideal_three_phase_LCC_AOC.slx</code> <strong>原模型</strong>：<code>ideal_three_phase_LCC.slx</code>（未修改，保持原样）</p>
+<h2 id="改了什么">改了什么</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">原模型</th>
+<th class="align-left">新模型</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Sine Wave1/2/3</code> 固定频率源（<code>2*pi*fs</code>）直接进 <code>Driver</code> A/B/C</td>
+<td class="align-left"><code>From(Vo)</code> → <code>PfmFrequency</code>（1-D 查表，Flat）→ <code>PhaseRate</code>（×2π）→ <code>PhaseAccumulator</code>（积分）→ 三路 <code>sin</code>（0/+120°/+240°）→ <code>GateMaskA/B/C</code> → <code>Driver</code> A/B/C</td>
+</tr>
+<tr>
+<td class="align-left">无到压停充</td>
+<td class="align-left"><code>AtTarget(&gt;=800)</code> + <code>LatchOr</code> + <code>StopLatch</code>（UnitDelay 1e-7）自锁 → <code>GateEnable = 1-latch</code> → 三路 <code>GateMask</code></td>
+</tr>
+<tr>
+<td class="align-left">固定 <code>fs=280 kHz</code></td>
+<td class="align-left"><code>pfmVoltage/pfmFrequency</code> 由 <code>aoc_schedule</code> 生成（61 断点，0–800 V，241.59–300 kHz，0–20 V 用 300 kHz 启动）</td>
+</tr>
+<tr>
+<td class="align-left">求解器 VariableStepAuto，RelTol 1e-3，Stop 0.003</td>
+<td class="align-left">ode15s，RelTol 2e-7，AbsTol 2e-9，MaxStep <code>1/(200·299257)</code>，Stop 0.0035</td>
+</tr>
+<tr>
+<td class="align-left">无记录</td>
+<td class="align-left"><code>VoLog</code>、<code>FsLog</code> 两个 <code>To Workspace</code>（可删）</td>
+</tr>
+</tbody></table></div>
+<p>新增块名：<code>VoFrom</code>、<code>PfmFrequency</code>、<code>PhaseRate</code>、<code>PhaseAccumulator</code>、<code>PhaseB</code>、<code>PhaseC</code>、<code>SinA/B/C</code>、<code>GateMaskA/B/C</code>、<code>AtTarget</code>、<code>TargetVoltage</code>、<code>LatchOr</code>、<code>StopLatch</code>、<code>OneConst</code>、<code>GateEnable</code>、<code>VoLog</code>、<code>FsLog</code>。</p>
+<p><code>InitFcn</code> 末尾追加：</p>
+<pre class="code"><code class="language-matlab">addpath('$PROJECT_ROOT/model_comparison_HOGA_EDF_FHA/charging_trajectory_AOC_10point_validation/scripts');
+[pfmVoltage,pfmFrequency]=aoc_schedule;</code></pre>
+<blockquote>如果移动了工程目录，需要同步改这一行，或把 <code>aoc_schedule.m</code> 放到 MATLAB 路径上。</blockquote>
+<h2 id="实测验证-器件保持原模型的理想值-ron-eps-vf-eps">实测验证（器件保持原模型的理想值 Ron=eps、Vf=eps）</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">检查</th>
+<th class="align-left">结果</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">输出电压</td>
+<td class="align-left">0 → 800.11 V，3.5 ms 末值 800.11 V</td>
+</tr>
+<tr>
+<td class="align-left">到压时间</td>
+<td class="align-left"><strong>t800 = 2.151012 ms</strong>（对比：器件 1e-6/0.6 V 的验证模型为 2.153487 ms，差 0.12%，来自二极管压降）</td>
+</tr>
+<tr>
+<td class="align-left">频率阶梯</td>
+<td class="align-left">20 V→243.6 kHz、200 V→244.6、300 V→243.9、400 V→272.3、500 V→280.0、600 V→281.8、700 V→290.4、790 V→299.3 kHz</td>
+</tr>
+<tr>
+<td class="align-left">最低频率</td>
+<td class="align-left">241.6 kHz</td>
+</tr>
+<tr>
+<td class="align-left">停充</td>
+<td class="align-left">到 800 V 后锁存，电压保持 800.11 V 不再上升</td>
+</tr>
+</tbody></table></div>
+<p>运行时会看到 <code>Driver/On Delay*</code> 的过零警告（零死区理想驱动造成），不影响结果。</p>
+<h2 id="怎么用">怎么用</h2>
+<pre class="code"><code class="language-matlab">open_system('MATLAB_PRJ/three_phase/simulink/ideal_three_phase_LCC_AOC')
+% 直接 Run；VoLog / FsLog 会出现在 out 里
+out = sim('ideal_three_phase_LCC_AOC');
+plot(out.Vo_meas.time, out.Vo_meas.signals.values)</code></pre>
+<ul>
+<li>改频率表：编辑 <code>.../aoc_reoptimization_20261020/data/local_254V_revision_20261020/aoc_smooth254_59_nodes.csv</code>，或直接改 <code>aoc_schedule.m</code>；</li>
+<li>改目标电压：把 <code>TargetVoltage</code> 常量的 800 改掉；</li>
+<li>关掉记录：删除 <code>VoLog</code>、<code>FsLog</code>；</li>
+<li>想复现 2.153487 ms：把 6 个二极管 <code>Vf</code> 改成 0.6、<code>Ron</code> 改成 1e-6、MOS <code>Rds</code> 改成 1e-6、<code>Goff</code> 改成 1e-11。</li>
+</ul>
+<h2 id="注意">注意</h2>
+<ul>
+<li>原模型 <code>ideal_three_phase_LCC.slx</code> 没有改动；</li>
+<li>这是<strong>开环频率前馈</strong>，不是恒流/恒功率闭环；电流限值、ZVS 都没有闭环保护；</li>
+<li>仿真前请确认 <code>aoc_schedule.m</code> 在路径上，否则 <code>pfmVoltage</code> 未定义会报错。</li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 三相 LCC 拓扑、参数与状态方程 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#1-1-主电路">1.1 主电路</a><a class="lvl2" href="#1-2-权威参数">1.2 权威参数</a><a class="lvl2" href="#1-3-坐标与六维差模状态">1.3 坐标与六维差模状态</a><a class="lvl2" href="#1-4-六管整流的精确约束">1.4 六管整流的精确约束</a><a class="lvl2" href="#1-5-ccm-的定义">1.5 CCM 的定义</a><a class="lvl2" href="#1-6-模型文件与哈希">1.6 模型文件与哈希</a><a class="lvl2" href="#1-7-常见错误清单">1.7 常见错误清单</a><a class="lvl2" href="#1-8-来源">1.8 来源</a></aside>
+<article class="content">
+<h1 id="01-三相-lcc-拓扑-参数与状态方程">01 三相 LCC 拓扑、参数与状态方程</h1>
+<blockquote>本文只描述本仓库归档的三相 LCC 研究对象。所有数值来自原项目 <code>MATLAB_PRJ/three_phase/simulink/three_phase_LCC.slx</code> 及其 InitFcn、接线审计报告和 <code>model_config.m</code>，没有新增仿真。</blockquote>
+<h2 id="1-1-主电路">1.1 主电路</h2>
+<pre class="code"><code class="language-text">Vin(50 V) ── Rin(1 mΩ) ── 三相三桥臂逆变（S1–S6，120° 互差）
+                              │
+              每相：电流传感器 → Ls(4.7 μH) → Cs(135 nF) → Δ 节点
+                              │
+        Δ 接：三条边各并一只 Cp(27 nF) 与一台单相变压器一次绕组
+                              │
+        三台理想变压器：一次 Δ，二次 Y，二次中性点 N 浮空（不接地、不接输出负端）
+                              │
+        六二极管整流：D1/D3/D5 上半桥，D2/D4/D6 下半桥
+                              │
+        Co = 6.25 μF × 2 串联（中点悬空、无均压电阻）→ 等效 3.125 μF
+                              │
+                          Vo（0 → 800 V，纯电容充电，无输出负载电阻）</code></pre>
+<p>关键点：</p>
+<ul>
+<li>这是<strong>三个半桥</strong>（三条桥臂），不是三个独立全桥。</li>
+<li>Cp 接在 Δ 的三条边上，与三台变压器一次绕组逐边并联；不是每相独立并联，也不在二次侧。</li>
+<li>二次 Y 的中性点浮空；六管整流桥共用，不能拆成三个单相整流桥。</li>
+<li>输出侧没有负载电阻；<code>Resistor=0.001 Ω</code> 是输入源串联电阻 Rin，不是负载。</li>
+<li>稳态比较时把 Co 换成两个 <code>Vo/2</code> 理想电压源，得到“冻结输出电压”的周期稳态；这不等于真实 3.125 μF 充电瞬态。</li>
+</ul>
+<h2 id="1-2-权威参数">1.2 权威参数</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-right">值</th>
+<th class="align-left">说明 / 易错点</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Vin</code></td>
+<td class="align-right">50 V</td>
+<td class="align-left">三桥臂共用输入</td>
+</tr>
+<tr>
+<td class="align-left"><code>Rin</code></td>
+<td class="align-right">1 mΩ</td>
+<td class="align-left">共用直流母线串联电阻；不是负载</td>
+</tr>
+<tr>
+<td class="align-left"><code>Ls</code></td>
+<td class="align-right">4.7 μH / 馈线</td>
+<td class="align-left">串联谐振电感</td>
+</tr>
+<tr>
+<td class="align-left"><code>Cs</code></td>
+<td class="align-right">135 nF / 馈线</td>
+<td class="align-left">串联谐振电容</td>
+</tr>
+<tr>
+<td class="align-left"><code>Cp_delta</code></td>
+<td class="align-right">27 nF / Δ 边</td>
+<td class="align-left">节点平衡等效 <code>3*Cp = 81 nF</code>；不是 27 nF 每相</td>
+</tr>
+<tr>
+<td class="align-left"><code>n = Ns/Np</code></td>
+<td class="align-right">4</td>
+<td class="align-left">单绕组变比；不要再乘 <code>√3</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>fs</code></td>
+<td class="align-right">280 kHz</td>
+<td class="align-left">基准开关频率；归一化扫描用 <code>fn = fs/fr</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>fr</code></td>
+<td class="align-right">199.804064 kHz</td>
+<td class="align-left"><code>1/(2π√(LsCs))</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>Z0</code></td>
+<td class="align-right">5.900408 Ω</td>
+<td class="align-left"><code>√(Ls/Cs)</code>，电流归一化基值</td>
+</tr>
+<tr>
+<td class="align-left"><code>Vf_rect</code></td>
+<td class="align-right">0.6 V / 二极管</td>
+<td class="align-left">桥端电压 <code>Vd = Vo + 2Vf</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>Co</code></td>
+<td class="align-right">3.125 μF</td>
+<td class="align-left">两只 6.25 μF 串联的等效值；800 V 储能约 1 J</td>
+</tr>
+<tr>
+<td class="align-left">死区</td>
+<td class="align-right">0（数学基准）</td>
+<td class="align-left">原 SLX 的 <code>td</code> 为 eps 量级；不是单相 demo 的 100 ns</td>
+</tr>
+<tr>
+<td class="align-left">器件</td>
+<td class="align-right">理想开关 + 恒压降二极管</td>
+<td class="align-left">省略 Coss、反恢复、漏感、励磁、ESR、漏电</td>
+</tr>
+</tbody></table></div>
+<h2 id="1-3-坐标与六维差模状态">1.3 坐标与六维差模状态</h2>
+<p>取三相零和空间的正交基 <code>U</code>、Δ 关联矩阵 <code>B</code>：</p>
+<pre class="code"><code class="language-text">B = [ 1  0 -1
+     -1  1  0
+      0 -1  1 ]
+
+U = [ 1/√2   1/√6
+     -1/√2   1/√6
+      0     -2/√6 ]
+
+C = U^T B U</code></pre>
+<p>定义：</p>
+<ul>
+<li><code>i = U q</code>：逆变器流向三条馈线的电流；</li>
+<li><code>v_s = U s + b·1</code>：串联电容沿馈线的压降，公共偏置 <code>b</code> 守恒，取 <code>b=0</code>；</li>
+<li><code>e = U r</code>：二次侧相对浮空中性点的电压；</li>
+<li><code>j = U w</code>：二次侧流向整流桥的电流；</li>
+<li>原边绕组电流为 <code>n j</code>；</li>
+<li>支路 KCL：<code>i = B (n j + Cp · du/dt)</code>，其中 <code>u = B^T v_x</code> 是 Δ 边电压。</li>
+</ul>
+<p>六个独立差模状态：</p>
+<pre class="code"><code class="language-text">x = [ qα, qβ, sα, sβ, rα, rβ ]^T</code></pre>
+<p>公共方程：</p>
+<pre class="code"><code class="language-text">Ls * dq/dt = Vin * p - Rin * p p^T q - s - C r / (3n)
+Cs * ds/dt = q
+(Cp/n^2) * dr/dt = C^T q / (3n) - w
+p = U^T d</code></pre>
+<p>其中 <code>d</code> 为三个上管门控。<code>p p^T</code> 包含跨相耦合，不能删；<code>C</code> 矩阵是 Δ/Y 连接带来的，也不能删。</p>
+<p>周期平均能量恒等式（独立物理核验）：</p>
+<pre class="code"><code class="language-text">W = Ls‖q‖²/2 + Cs‖s‖²/2 + Cp‖r‖²/(2n²)
+Vin * mean(i_dc) = (Vo + 2Vf) * Io + Rin * mean(i_dc²)
+i_dc = d^T i</code></pre>
+<h2 id="1-4-六管整流的精确约束">1.4 六管整流的精确约束</h2>
+<p>令 <code>Vd = Vo + 2Vf</code>，<code>A</code> 的六行是 <code>U_a - U_b</code>（<code>a ≠ b</code>，对应六种上/下管组合）。可行域是六边形：</p>
+<pre class="code"><code class="language-text">K = { r : A r ≤ Vd * 1 }
+w ∈ N_K(r)
+io = Σ_a max(j_a, 0) = (1/2) Σ_a |j_a|</code></pre>
+<p>最后一条等式只有在零和电流与二极管可行性成立时才成立；不能把任意候选的 <code>Σ|j|/2</code> 直接当成合法整流电流。</p>
+<p><code>w ∈ N_K(r)</code> 同时表达：</p>
+<ol>
+<li>导通的二极管对把对应线电压钳在 <code>Vd</code>；</li>
+<li>关断的二极管反压非负；</li>
+<li>导通二极管电流非负；</li>
+<li>互补条件（电压间隙 × 电流 = 0）。</li>
+</ol>
+<p>允许两管、三管和全截止区间。全截止时二次侧绝对电位不唯一，存在 DC 代表解族；固定一个代表解只说明“存在周期解”，不证明实际充电可达。</p>
+<h2 id="1-5-ccm-的定义">1.5 CCM 的定义</h2>
+<p>本项目的 CCM 定义是：</p>
+<blockquote>整流桥不存在有限时长的“全截止”区间。</blockquote>
+<p>不是“谐振电感电流不穿过零”。因此：</p>
+<ul>
+<li>100 V 附近存在约 43.87% 的三管重叠区间；</li>
+<li>400 V、700 V 为连续两管主导；</li>
+<li>800 V/280 kHz 含约 7.4% 全截止区间；</li>
+<li>800 V/240 kHz、260 kHz 为全截止周期代表解（<code>Io = 0</code>）。</li>
+</ul>
+<p>不能把“所有工作点都是 CCM”当成前提。</p>
+<h2 id="1-6-模型文件与哈希">1.6 模型文件与哈希</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">SHA-256</th>
+<th class="align-left">用途</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>three_phase_LCC.slx</code></td>
+<td class="align-left"><code>807db96a073d18972c1fe0242bf7576570b5e862bdfc8a61c8d03aff8e28faa0</code></td>
+<td class="align-left">主电路源模型（审计基准）</td>
+</tr>
+<tr>
+<td class="align-left"><code>ideal_three_phase_LCC.slx</code></td>
+<td class="align-left"><code>70f0cdba4bc21c6e2c8b8722ee0408d7214c54cbcae104e3cb6cbddbcec8e1cc</code></td>
+<td class="align-left">近理想副本；二极管 <code>Vf=eps</code>，与 0.6 V 数学基准不同</td>
+</tr>
+<tr>
+<td class="align-left"><code>lcc3_comparison.slx</code></td>
+<td class="align-left"><code>8491e14f7397fabbe370a0127b23c74e5ca228fa6986f8baefdf8d8dbbffa4c23</code></td>
+<td class="align-left">冻结输出电压的 Simulink 比较模型</td>
+</tr>
+</tbody></table></div>
+<p>本仓库的 <code>models/</code> 目录保存了上述三个模型，以及 AOC 充电用的 <code>AOC_charge.slx</code>、<code>lcc3_frozen_aoc.slx</code>。模型不能替代报告中的数值证据；打开模型前请先读 <code>models/README.md</code>。</p>
+<h2 id="1-7-常见错误清单">1.7 常见错误清单</h2>
+<ol>
+<li>把 Cp 当成每相 27 nF 并联 → 实际是 Δ 每边 27 nF，平衡星等效 81 nF。</li>
+<li>把 Co 当成 12.5 μF 并联 → 实际是两只 6.25 μF 串联，等效 3.125 μF。</li>
+<li>把 <code>Resistor=0.001 Ω</code> 当负载 → 它是输入源串联电阻，输出没有负载电阻。</li>
+<li>把三个单相结果相加或乘 3 → 三相共用六管桥，Δ/Y 耦合不能这样拆。</li>
+<li>把 <code>n=4</code> 再乘 <code>√3</code> → 单绕组变比就是 4；相数因子已在整流系数中体现。</li>
+<li>把单相 LCC 的 <code>v_Cp = ±Vo/n</code> 平台判据套过来 → 本拓扑是三相分段钳位，约束是 <code>Vo = n(max p_j − min p_j)</code> 一类联合约束。</li>
+<li>把“文件名 ideal”当成“满足全部比较条件” → <code>ideal_three_phase_LCC.slx</code> 的二极管 <code>Vf=eps</code>，与 0.6 V 基准不同。</li>
+</ol>
+<h2 id="1-8-来源">1.8 来源</h2>
+<ul>
+<li><code>reports/audit/topology_and_assumptions.md</code></li>
+<li><code>reports/normalized/01_模型参数拓扑审计.md</code></li>
+<li><code>reports/comparison/HOGA_EDF_FHA_Accuracy_Analysis.md</code> 第 1.2、2.1 节</li>
+<li><code>code/matlab/comparison/model_config.m</code></li>
+<li>主模型 SHA-256 见 <code>SHA256SUMS.txt</code></li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

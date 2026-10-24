@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>报告归档 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#reports-comparison">`reports/comparison/`</a><a class="lvl2" href="#reports-audit">`reports/audit/`</a><a class="lvl2" href="#reports-normalized">`reports/normalized/`</a><a class="lvl2" href="#reports-aoc">`reports/aoc/`</a><a class="lvl2" href="#reports-accuracy_figures">`reports/accuracy_figures/`</a><a class="lvl2" href="#读报告的顺序">读报告的顺序</a><a class="lvl2" href="#没有归档的报告">没有归档的报告</a></aside>
+<article class="content">
+<h1 id="报告归档">报告归档</h1>
+<p>这些是原项目报告的公开归档版。<strong>数值与结论未改</strong>；只做了三件事：</p>
+<ol>
+<li>本机绝对路径 → <code>$PROJECT_ROOT</code> / <code>$MATLAB</code> / <code>$PYTHON</code>；</li>
+<li>图片链接 → 本仓库 <code>reports/accuracy_figures/</code>；</li>
+<li>文件头加“归档说明”。</li>
+</ol>
+<p>部分原文中的内部 CSV/目录链接没有随包迁移，可能失效；数据以 <code>data/</code> 为准。</p>
+<h2 id="reports-comparison"><code>reports/comparison/</code></h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+<th class="align-left">备注</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>HOGA_EDF_FHA_Accuracy_Analysis.md</code></td>
+<td class="align-left">七章精度分析，28 图、17 表</td>
+<td class="align-left">主报告；图已复制</td>
+</tr>
+<tr>
+<td class="align-left"><code>Model_Comparison_Report.md</code></td>
+<td class="align-left">建模/审计/EDF/FHA 统一验证工作报告</td>
+<td class="align-left">12 KB</td>
+</tr>
+<tr>
+<td class="align-left"><code>Conclusions_for_Thesis.md</code></td>
+<td class="align-left">可用于论文的结论边界</td>
+<td class="align-left">2 KB</td>
+</tr>
+</tbody></table></div>
+<h2 id="reports-audit"><code>reports/audit/</code></h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>HOGA_Audit_Report.md</code></td>
+<td class="align-left">源码/方程/整流通道审计；F01–F05 问题表</td>
+</tr>
+<tr>
+<td class="align-left"><code>HOGA_Fix_Log.md</code></td>
+<td class="align-left">两项隔离修复日志</td>
+</tr>
+<tr>
+<td class="align-left"><code>topology_and_assumptions.md</code></td>
+<td class="align-left">实际接线、参数、六维方程、整流约束</td>
+</tr>
+</tbody></table></div>
+<h2 id="reports-normalized"><code>reports/normalized/</code></h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+<th class="align-left">备注</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>01_模型参数拓扑审计.md</code></td>
+<td class="align-left">归一化研究的参数/拓扑审计</td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>02_扫描与求解状态.md</code></td>
+<td class="align-left">A/B/C 扫描、验收、未决分布</td>
+<td class="align-left"><strong>最新计数口径</strong>（276/203/73/68）</td>
+</tr>
+<tr>
+<td class="align-left"><code>03_开关模型交叉验证报告.md</code></td>
+<td class="align-left">18 次开关验证</td>
+<td class="align-left">17 通过 / 1 失败保留</td>
+</tr>
+<tr>
+<td class="align-left"><code>04_逐图学术分析.md</code></td>
+<td class="align-left">9 张核心图逐图五段式分析</td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>05_结果与讨论.md</code></td>
+<td class="align-left">论文第 5 章初稿</td>
+<td class="align-left"><strong>计数为阶段 C 前口径</strong>（263/190/81）</td>
+</tr>
+<tr>
+<td class="align-left"><code>06_交付清单.md</code></td>
+<td class="align-left">交付物/完成度</td>
+<td class="align-left">计数也为阶段 C 前口径</td>
+</tr>
+</tbody></table></div>
+<blockquote>引用计数时以 <code>02</code> + <code>data/normalized/characteristic_domain.csv</code> 为准。<code>05</code>/<code>06</code> 的定性结论仍可用，但 263/190/81 不要与 276/203/68 混用。</blockquote>
+<h2 id="reports-aoc"><code>reports/aoc/</code></h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">内容</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>AOC_20point_accuracy_report.md</code></td>
+<td class="align-left">AOC 20 点完整报告</td>
+</tr>
+<tr>
+<td class="align-left"><code>AOC_输出特性工作总结.md</code></td>
+<td class="align-left">输出特性工作总结（GPT 评审用）</td>
+</tr>
+<tr>
+<td class="align-left"><code>AOC_control_retrofit.md</code></td>
+<td class="align-left">AOC 控制改造说明</td>
+</tr>
+</tbody></table></div>
+<h2 id="reports-accuracy_figures"><code>reports/accuracy_figures/</code></h2>
+<p>45 张 PNG，供 <code>HOGA_EDF_FHA_Accuracy_Analysis.md</code> 显示：</p>
+<ul>
+<li>39 张来自 <code>05_verification/figures/</code>；</li>
+<li>6 张来自 <code>06_reports/accuracy_analysis/figures/</code>。</li>
+</ul>
+<p>文件名保持原样，便于与原项目对照。</p>
+<h2 id="读报告的顺序">读报告的顺序</h2>
+<ol>
+<li><code>audit/topology_and_assumptions.md</code>（先知道电路是什么）</li>
+<li><code>audit/HOGA_Audit_Report.md</code>（知道 HOGA 怎么审计）</li>
+<li><code>comparison/HOGA_EDF_FHA_Accuracy_Analysis.md</code>（主结果）</li>
+<li><code>normalized/02</code>（扫描状态）</li>
+<li><code>normalized/05</code>（论文文字，注意计数）</li>
+<li><code>aoc/AOC_20point_accuracy_report.md</code>（充电全过程）</li>
+</ol>
+<h2 id="没有归档的报告">没有归档的报告</h2>
+<p>以下报告与 HOGA 主线相关但未上传，避免把不同主题混在一起：</p>
+<ul>
+<li><code>reports/kimi_mode_review_20261024/</code>：工作模态独立重建（12 联合区间、Cp 分段钳位），与 HOGA 互为交叉验证，但不是 HOGA 模型本身。</li>
+<li><code>reports/waveform_modes_20261023/</code>：旧模态划分，部分结论已被 kimi 审查推翻。</li>
+<li><code>MATLAB_PRJ/demo/magnetics_*</code>：磁件/损耗/硬件，不是 HOGA 精度证据。</li>
+<li><code>thesis_*</code>、<code>doc/</code>：学位论文/答辩材料，未逐篇归档。</li>
+</ul>
+<p>需要这些材料时，请回原工作区，不要从本仓库推断。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

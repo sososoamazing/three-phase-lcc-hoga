@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>原创文档许可：CC BY 4.0 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="text/markdown" href="ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="index.html">总览</a>
+    <a href="docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="docs/04_模型对比结果.html">结果</a>
+    <a href="docs/05_归一化特性扫描.html">扫描</a>
+    <a href="docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="docs/07_局限与证据等级.html">边界</a>
+    <a href="data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#例外">例外</a><a class="lvl2" href="#建议署名">建议署名</a></aside>
+<article class="content">
+<h1 id="原创文档许可-cc-by-4-0">原创文档许可：CC BY 4.0</h1>
+<p>本仓库中由本项目作者原创的文档、图、表和整理内容（包括 <code>docs/</code>、<code>reports/</code> 中的原创部分、<code>data/</code> 中的派生 CSV、<code>figures/</code> 中的图）采用 <strong>Creative Commons Attribution 4.0 International (CC BY 4.0)</strong> 许可。</p>
+<p>你可以：</p>
+<ul>
+<li>共享：以任何媒介或格式复制、发行；</li>
+<li>改编：修改、转换、以原作品为基础创作；</li>
+</ul>
+<p>但必须：</p>
+<ul>
+<li><strong>署名</strong>：注明来源（本仓库名、URL、作者/项目名），并说明是否修改；</li>
+<li>不得暗示原作者为你或你的使用背书。</li>
+</ul>
+<p>许可全文：https://creativecommons.org/licenses/by/4.0/legalcode</p>
+<h2 id="例外">例外</h2>
+<ol>
+<li><strong>论文 PDF</strong>：<code>paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code> 采用 <strong>CC BY-NC-ND 4.0</strong>，版权归作者/IEEE；不得商业使用、不得分发修改版。见 <code>paper/README.md</code>。</li>
+<li><strong>代码</strong>：<code>code/</code> 采用 MIT，见 <code>LICENSE</code>。</li>
+<li><strong>原项目引用的第三方材料</strong>：如论文图、外部数据等，权利归原权利人；本仓库只做引用/归档，不改变其许可。</li>
+<li><strong>原项目报告中的数值/结论</strong>：本仓库只做公开归档；如与原项目约定冲突，以原项目约定为准。</li>
+</ol>
+<h2 id="建议署名">建议署名</h2>
+<pre class="code"><code class="language-text">Three-Phase LCC HOGA Modeling Archive (2026).
+https://github.com/sososoamazing/three-phase-lcc-hoga
+Licensed under CC BY 4.0 (original docs) / MIT (code).</code></pre>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

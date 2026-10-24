@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>代码地图与复现边界 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#0-先读这一句">0. 先读这一句</a><a class="lvl2" href="#1-目录">1. 目录</a><a class="lvl2" href="#2-关键文件">2. 关键文件</a><a class="lvl2" href="#3-环境">3. 环境</a><a class="lvl2" href="#4-调用关系-hoga-主链">4. 调用关系（HOGA 主链）</a><a class="lvl2" href="#5-路径设置">5. 路径设置</a><a class="lvl2" href="#6-代码来源与等价性">6. 代码来源与等价性</a><a class="lvl2" href="#7-不能从代码直接得到的东西">7. 不能从代码直接得到的东西</a><a class="lvl2" href="#8-python-工具">8. Python 工具</a><a class="lvl2" href="#9-许可">9. 许可</a></aside>
+<article class="content">
+<h1 id="代码地图与复现边界">代码地图与复现边界</h1>
+<h2 id="0-先读这一句">0. 先读这一句</h2>
+<p>本目录是<strong>审计代码的公开归档</strong>，不是“一键复现包”。原项目的完整扫描数据（508 个 <code>.mat</code>、<code>validation/</code> 波形）没有上传；<code>model_config.m</code> 里的 <code>cfg.root</code> 仍假设原项目目录结构。因此：</p>
+<ul>
+<li>可以读代码、对照公式、移植函数；</li>
+<li>不能直接在本仓库从零重跑 20 点/344 点扫描，除非补回原始数据并调整路径；</li>
+<li>没有在本仓库重新运行 MATLAB/Simulink；所有数值来自原项目已保存结果。</li>
+</ul>
+<h2 id="1-目录">1. 目录</h2>
+<pre class="code"><code class="language-text">code/
+├─ matlab/
+│  ├─ core/          # V2.3 主求解器 + 几何/参数/指标/参考/验收 + legacy 物理
+│  ├─ accelerated/   # 向量化 studyHoga.m（与 V2.3 四点等价）
+│  ├─ h49/           # H49 固定阶求解 + 十项验收
+│  ├─ comparison/    # 统一参数、HOGA/EDF/FHA 接口、峰值/谐波工具
+│  ├─ verification/  # 20 点比较、Simulink、回归、加速验证
+│  ├─ normalized/    # A/B/C 扫描、精化、恢复、单点求解
+│  └─ plotting/      # 论文图、精度图
+└─ python/           # 归一化统计、精度复核、来源审计</code></pre>
+<h2 id="2-关键文件">2. 关键文件</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>core/lcc3v2Params.m</code></td>
+<td class="align-left">物理参数 + 数值设置（<code>Nfourier=1536</code>、<code>hoga_tol=1e-9</code> 等）</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Geometry.m</code></td>
+<td class="align-left"><code>B</code>、<code>U</code>、<code>C</code>、六面 <code>A</code>、<code>pairs</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Hoga.m</code></td>
+<td class="align-left">事件增强 HOGA 主求解器（V2.3）</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Discover.m</code></td>
+<td class="align-left">从 legacy 候选提取事件 schedule</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Metrics.m</code></td>
+<td class="align-left">Io/RMS/峰值/功率/二极管诊断</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Reference.m</code></td>
+<td class="align-left">独立事件 ODE 参考</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Accept.m</code></td>
+<td class="align-left">三层验收（守卫、阶数、参考）</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3_physics.m</code></td>
+<td class="align-left">门控 Fourier 激励、Δ 子空间、整流可行域</td>
+</tr>
+<tr>
+<td class="align-left"><code>accelerated/studyHoga.m</code></td>
+<td class="align-left">向量化等价实现；扫描用</td>
+</tr>
+<tr>
+<td class="align-left"><code>h49/h49Solve.m</code></td>
+<td class="align-left">固定 H49</td>
+</tr>
+<tr>
+<td class="align-left"><code>h49/h49_accept.m</code></td>
+<td class="align-left">H49 十项验收</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparison/model_config.m</code></td>
+<td class="align-left">统一参数入口（原项目路径假设）</td>
+</tr>
+<tr>
+<td class="align-left"><code>comparison/solve_model.m</code></td>
+<td class="align-left"><code>HOGA/EDF/FHA/REFERENCE</code> 统一接口</td>
+</tr>
+<tr>
+<td class="align-left"><code>verification/run_comparison.m</code></td>
+<td class="align-left">20 点四模型比较</td>
+</tr>
+<tr>
+<td class="align-left"><code>verification/run_final_tests.m</code></td>
+<td class="align-left">30 项回归</td>
+</tr>
+<tr>
+<td class="align-left"><code>normalized/runNormalizedStudy.m</code></td>
+<td class="align-left">A/B 扫描入口</td>
+</tr>
+<tr>
+<td class="align-left"><code>normalized/runRecoveryStudy.m</code></td>
+<td class="align-left">阶段 C 恢复扫描</td>
+</tr>
+<tr>
+<td class="align-left"><code>plotting/plotPaperFigures.m</code></td>
+<td class="align-left">归一化论文图</td>
+</tr>
+<tr>
+<td class="align-left"><code>plotting/plot_accuracy_analysis.m</code></td>
+<td class="align-left">精度报告补图</td>
+</tr>
+</tbody></table></div>
+<h2 id="3-环境">3. 环境</h2>
+<ul>
+<li>MATLAB R2024b（原项目用 <code>D:/MATLAB R2024B</code>；本仓库不绑定路径）。</li>
+<li>Optimization Toolbox（<code>lsqnonlin</code>）。</li>
+<li>Simulink + Simscape + Simscape Electrical：仅运行 <code>models/</code> 里的 SLX 时需要。</li>
+<li>Python 3.10+：<code>pandas</code>、<code>numpy</code>、<code>matplotlib</code>（原项目用托管 Python；无 scipy 依赖）。</li>
+</ul>
+<h2 id="4-调用关系-hoga-主链">4. 调用关系（HOGA 主链）</h2>
+<pre class="code"><code class="language-text">model_config()
+  └─ lcc3v2Params()
+      └─ lcc3v2Hoga(p, Vo, H, seed)
+          ├─ lcc3v2Discover()        % 无 seed 时
+          ├─ lcc3v2Geometry()
+          ├─ lcc3_physics('fourier_drive', H, U)
+          ├─ lsqnonlin(@eventResidual, ...)
+          ├─ lcc3v2Metrics()
+          └─ lcc3v2FinalizeOpen()    % 全截止分支
+              └─ lcc3v2Accept(hoga, refFine, refCoarse, refChange, orderChange, p)</code></pre>
+<p><code>studyHoga.m</code> 与 <code>h49Solve.m</code> 复用同一套 <code>lcc3v2*</code> 函数；不要把同名函数同时加入 MATLAB path。原项目用独立目录 + <code>addpath</code> 控制。</p>
+<h2 id="5-路径设置">5. 路径设置</h2>
+<pre class="code"><code class="language-matlab">repo = pwd;  % 仓库根目录
+addpath(fullfile(repo,'code','matlab','core'));
+addpath(fullfile(repo,'code','matlab','accelerated'));
+addpath(fullfile(repo,'code','matlab','h49'));
+addpath(fullfile(repo,'code','matlab','comparison'));
+addpath(fullfile(repo,'code','matlab','verification'));
+addpath(fullfile(repo,'code','matlab','normalized'));</code></pre>
+<p>注意：</p>
+<ul>
+<li><code>model_config.m</code> 用 <code>fileparts(mfilename('fullpath'))</code> 推 <code>cfg.root</code>，在原项目里指向 <code>model_comparison_HOGA_EDF_FHA</code>；在本仓库里会指向 <code>code/matlab</code>，因此 <strong><code>cfg.source_slx</code> 和 <code>cfg.root/06_reports</code> 不再成立</strong>。</li>
+<li>若要复现，建议把本仓库代码复制回原项目对应目录，或手动改 <code>cfg.root</code> / <code>cfg.source_slx</code>，并补回 <code>data/</code>。</li>
+<li><code>verification/build_fixed_vo_model.m</code> 等三个脚本原本依赖本机 MATLAB agentic toolkit；公开版已把私有 <code>addpath</code> 注释掉，不能直接用于重建 SLX。</li>
+</ul>
+<h2 id="6-代码来源与等价性">6. 代码来源与等价性</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">来源</th>
+<th class="align-left">验证</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>core/lcc3v2Hoga.m</code></td>
+<td class="align-left">原 <code>hoga_audit_v2_20261014/src/core/</code></td>
+<td class="align-left">审计报告；四点 H31 严格验收</td>
+</tr>
+<tr>
+<td class="align-left"><code>accelerated/studyHoga.m</code></td>
+<td class="align-left">原 <code>scripts/studyHoga.m</code></td>
+<td class="align-left">与 V2.3 四点等价，电流系数最大差约 4.94e-13 A</td>
+</tr>
+<tr>
+<td class="align-left"><code>h49/h49Solve.m</code></td>
+<td class="align-left">原 <code>H49_comparison/model/HOGA_H49/</code></td>
+<td class="align-left">20 点 AOC 十项验收</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/solve_three_phase_lcc_hoga.m</code></td>
+<td class="align-left">legacy</td>
+<td class="align-left">仅历史候选；400 V 法锥失败，不作当前精度</td>
+</tr>
+<tr>
+<td class="align-left"><code>core/lcc3v2Reference.m</code></td>
+<td class="align-left">原 V2.3</td>
+<td class="align-left">独立事件 ODE；与 HOGA 共享物理假设</td>
+</tr>
+</tbody></table></div>
+<h2 id="7-不能从代码直接得到的东西">7. 不能从代码直接得到的东西</h2>
+<ul>
+<li>508 个原始 <code>.mat</code> 波形（<code>data/A|B|C</code>）。</li>
+<li>18 个 <code>validation/*.mat</code> 完整波形。</li>
+<li><code>runtime/</code> 的日志、PID、MATLAB prefs。</li>
+<li>原项目 <code>06_reports/</code> 的完整统计中间件（本仓库只保留精选 CSV）。</li>
+<li>硬件实验、损耗/温升、闭环充电。</li>
+</ul>
+<h2 id="8-python-工具">8. Python 工具</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>python/analyzeNormalizedStudy.py</code></td>
+<td class="align-left">从 A/B/C MAT 重建唯一点、覆盖、Pareto、交叉、误差表</td>
+</tr>
+<tr>
+<td class="align-left"><code>python/analyze_accuracy_data.py</code></td>
+<td class="align-left">从 80 条记录复算统计</td>
+</tr>
+<tr>
+<td class="align-left"><code>python/verify_accuracy_analysis.py</code></td>
+<td class="align-left">独立复核报告数字与图</td>
+</tr>
+<tr>
+<td class="align-left"><code>python/audit_sources.py</code></td>
+<td class="align-left">解析 SLX XML，重建接线/参数审计</td>
+</tr>
+</tbody></table></div>
+<p>这些脚本也假设原项目目录结构；在本仓库中只能读逻辑，不能直接跑完整数据链。</p>
+<h2 id="9-许可">9. 许可</h2>
+<p>代码 MIT，见仓库根 <code>LICENSE</code>。原项目报告/数据的权利归原作者；本仓库只做公开归档。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

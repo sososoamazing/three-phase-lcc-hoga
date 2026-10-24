@@ -1,0 +1,47 @@
+# Three-Phase LCC HOGA Modeling Archive
+
+> Public archive for HOGA (high-order generalized averaging) modeling of a 50 V → 800 V three-phase Δ/Y LCC resonant capacitor charger. Includes the TPEL 2024 HOGA paper, method notes, event-enriched implementation, 20-point HOGA/EDF/FHA comparison, 344-point normalized scan, AOC 0→800 V validation, code, data and figures. No hardware experiments.
+
+Canonical site: https://sososoamazing.github.io/three-phase-lcc-hoga/
+Repository: https://github.com/sososoamazing/three-phase-lcc-hoga
+
+## Start here
+
+- [ONE_PAGE.md](https://raw.githubusercontent.com/sososoamazing/three-phase-lcc-hoga/main/ONE_PAGE.md): full one-page overview with key numbers, tables and caveats. Best single URL for an LLM.
+- [README.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/README.md): repository landing page and reading order.
+- [docs/00_项目梳理总览.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/00_项目梳理总览.md): whole-project survey, asset map, version conflicts.
+- [docs/07_局限与证据等级.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/07_局限与证据等级.md): evidence levels, 12 red lines, unresolved items.
+
+## Method
+
+- [docs/02_论文精读_HOGA方法.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/02_论文精读_HOGA方法.md): TPEL 2024 HOGA paper — moving Fourier coefficients, Toeplitz/sidebands, switching-signal models, assumptions, mapping to the project.
+- [docs/03_三相LCC_HOGA实现.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/03_三相LCC_HOGA实现.md): event-enriched moving-Fourier equilibrium — unknowns, residuals, projection, guards, acceptance.
+- [docs/01_拓扑与参数.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/01_拓扑与参数.md): topology, parameters, six-dimensional state equations, rectifier constraints.
+
+## Results
+
+- [docs/04_模型对比结果.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/04_模型对比结果.md): 20-point HOGA vs EDF vs FHA vs Simulink; 16 CCM + 4 non-CCM; counterexamples.
+- [docs/05_归一化特性扫描.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/05_归一化特性扫描.md): 344-point fn/k scan; 276 accepted / 203 charging / 73 blocked / 68 unresolved; stress crossing; k effect.
+- [docs/06_充电轨迹_AOC.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/06_充电轨迹_AOC.md): AOC 0→800 V, 20 points, H49; MAPE; quasi-static boundary.
+
+## Paper
+
+- [paper/README.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/paper/README.md): citation, DOI, license (CC BY-NC-ND 4.0), reading guide.
+- [paper PDF](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf): author accepted version, unmodified.
+
+## Data and code
+
+- [data/README.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/data/README.md): CSV dictionary and count conventions.
+- [code/README.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/code/README.md): code map, dependencies, path caveats.
+- [models/README.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/models/README.md): SLX models and SHA-256.
+- [reports/README.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/reports/README.md): archived reports and known count conflicts.
+
+## For ChatGPT / web agents
+
+- [docs/09_GPT阅读指南.md](https://github.com/sososoamazing/three-phase-lcc-hoga/blob/main/docs/09_GPT阅读指南.md): copy-paste prompts, URL table, parsing caveats.
+- If a PDF is not parseable, use `docs/02` (method notes) and `ONE_PAGE.md` instead.
+- Key rule: do not turn “unresolved” into “no solution”, “all-blocked family” into “charging reachable”, or “positive commutation current” into “ZVS”.
+
+## Citation
+
+H. Li, K. Wang, J. Fang, W. Chen, X. Yang, “High-Order Generalized Averaging Method for Power Electronics Modeling From DC to Above Half the Switching Frequency,” IEEE Trans. Power Electron., vol. 40, no. 1, pp. 176–194, 2025. DOI: 10.1109/TPEL.2024.3450712.

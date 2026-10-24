@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 归一化特性扫描：344 个工况点的 HOGA 地图 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#5-1-归一化定义">5.1 归一化定义</a><a class="lvl2" href="#5-2-扫描设计与实际状态">5.2 扫描设计与实际状态</a><a class="lvl2" href="#5-3-输出能力-io-随-vo-单调下降-电压上限由-fn-决定">5.3 输出能力：Io 随 Vo 单调下降，电压上限由 fn 决定</a><a class="lvl2" href="#5-4-电流应力-低压大环流-550-600-v-交叉">5.4 电流应力：低压大环流、550–600 V 交叉</a><a class="lvl2" href="#5-5-电容比-k-用电流换刚度">5.5 电容比 k：用电流换刚度</a><a class="lvl2" href="#5-6-二维工作域">5.6 二维工作域</a><a class="lvl2" href="#5-7-调频能降应力-但不能改善-单位输出的应力代价">5.7 调频能降应力，但不能改善“单位输出的应力代价”</a><a class="lvl2" href="#5-8-开关模型交叉验证">5.8 开关模型交叉验证</a><a class="lvl2" href="#5-9-结论与边界">5.9 结论与边界</a><a class="lvl2" href="#5-10-来源">5.10 来源</a></aside>
+<article class="content">
+<h1 id="05-归一化特性扫描-344-个工况点的-hoga-地图">05 归一化特性扫描：344 个工况点的 HOGA 地图</h1>
+<blockquote>数据：<code>data/normalized/characteristic_domain.csv</code>；完整报告：<code>reports/normalized/02_扫描与求解状态.md</code>、<code>05_结果与讨论.md</code>。这一组结果回答的是：把开关频率和并联电容比做成无量纲变量后，三相 LCC 在 50–800 V 内的<strong>输出能力、电流应力和可行域</strong>是什么样。</blockquote>
+<h2 id="5-1-归一化定义">5.1 归一化定义</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-left">定义</th>
+<th class="align-left">值 / 范围</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">谐振频率</td>
+<td class="align-left"><code>fr = 1/(2π√(LsCs))</code></td>
+<td class="align-left">199.804064 kHz</td>
+</tr>
+<tr>
+<td class="align-left">阻抗基值</td>
+<td class="align-left"><code>Z0 = √(Ls/Cs)</code></td>
+<td class="align-left">5.900408 Ω</td>
+</tr>
+<tr>
+<td class="align-left">归一化频率</td>
+<td class="align-left"><code>fn = fs/fr</code></td>
+<td class="align-left">1.0–2.0（约 199.8–399.6 kHz）</td>
+</tr>
+<tr>
+<td class="align-left">电容比</td>
+<td class="align-left"><code>k = Cp_delta/Cs</code></td>
+<td class="align-left">0.1 / 0.2 / 0.35 / 0.5 / 0.8 / 1.0</td>
+</tr>
+<tr>
+<td class="align-left">谐振腔增益</td>
+<td class="align-left"><code>M = Vo/(nVin)</code></td>
+<td class="align-left">0–4；<code>M=4</code> 对应 800 V</td>
+</tr>
+<tr>
+<td class="align-left">输出电流归一</td>
+<td class="align-left"><code>Jo = Io/(Vin/Z0)</code></td>
+<td class="align-left">无量纲</td>
+</tr>
+<tr>
+<td class="align-left">应力归一</td>
+<td class="align-left"><code>Jm = Im/(Vin/Z0)</code></td>
+<td class="align-left">无量纲</td>
+</tr>
+</tbody></table></div>
+<p><code>k</code> 改变的是 Δ 每条边的 <code>Cp_delta</code>：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left"><code>k</code></th>
+<th class="align-right">0.1</th>
+<th class="align-right">0.2</th>
+<th class="align-right">0.35</th>
+<th class="align-right">0.5</th>
+<th class="align-right">0.8</th>
+<th class="align-right">1.0</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Cp_delta</code>/nF</td>
+<td class="align-right">13.5</td>
+<td class="align-right">27</td>
+<td class="align-right">47.25</td>
+<td class="align-right">67.5</td>
+<td class="align-right">108</td>
+<td class="align-right">135</td>
+</tr>
+</tbody></table></div>
+<p>注意：</p>
+<ul>
+<li><code>k_star = 3k</code> 只用于平衡星等效推导；主数据始终使用实际 Δ 参数。</li>
+<li>改变 <code>k</code> <strong>不重新定义</strong> <code>fr</code>，只改变每条边的 <code>Cp_delta</code>。</li>
+<li>曲线不是“无损、任意器件”的通用图：<code>Rin/Z0 ≈ 1.6948e-4</code>、<code>Vf/Vin = 0.012</code> 与具体参考电路绑定。</li>
+</ul>
+<h2 id="5-2-扫描设计与实际状态">5.2 扫描设计与实际状态</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">阶段</th>
+<th class="align-right">计划点</th>
+<th class="align-right">现存原始 MAT</th>
+<th class="align-right">通过</th>
+<th class="align-right">其中充电</th>
+<th class="align-right">其中全阻断族</th>
+<th class="align-right">未决</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">A：<code>Vo=0:50:800</code> × <code>fn=1:0.1:2</code>，另 <code>fn=1.4</code> 六个 <code>k</code></td>
+<td class="align-right">272</td>
+<td class="align-right">259</td>
+<td class="align-right">176</td>
+<td class="align-right">115</td>
+<td class="align-right">61</td>
+<td class="align-right">96（首次运行状态）</td>
+</tr>
+<tr>
+<td class="align-left">B：自适应 168 点</td>
+<td class="align-right">168</td>
+<td class="align-right">168</td>
+<td class="align-right">87</td>
+<td class="align-right">75</td>
+<td class="align-right">12</td>
+<td class="align-right">81</td>
+</tr>
+<tr>
+<td class="align-left">C：恢复扫描（B 后 81 个未决点）</td>
+<td class="align-right">81</td>
+<td class="align-right">81</td>
+<td class="align-right">13</td>
+<td class="align-right">13</td>
+<td class="align-right">0</td>
+<td class="align-right">68</td>
+</tr>
+<tr>
+<td class="align-left"><strong>并集（唯一点）</strong></td>
+<td class="align-right"><strong>440</strong></td>
+<td class="align-right"><strong>508 条记录 / 344 唯一点</strong></td>
+<td class="align-right"><strong>276</strong></td>
+<td class="align-right"><strong>203</strong></td>
+<td class="align-right"><strong>73</strong></td>
+<td class="align-right"><strong>68</strong></td>
+</tr>
+</tbody></table></div>
+<p>最终状态（以 <code>characteristic_domain.csv</code> 为准）：</p>
+<ul>
+<li><strong>344 个唯一点</strong>；</li>
+<li><strong>276 个通过</strong> = <strong>203 个充电 CCM</strong> + <strong>73 个全阻断周期族</strong>；</li>
+<li><strong>68 个未决</strong>；</li>
+<li>通过点中 <strong>H31 共 257 点、H63 共 19 点</strong>；</li>
+<li>203 个充电点全部为 CCM（<code>blocked_fraction &lt; 1e-8</code>），本轮没有 DCM 充电点。</li>
+</ul>
+<blockquote><strong>口径提醒</strong>：<code>reports/normalized/05_结果与讨论.md</code> 与 <code>06_交付清单.md</code> 里仍保留阶段 C 之前的“263 通过 / 190 充电 / 81 未决”口径；<code>02_扫描与求解状态.md</code> 第 5A 节记录了阶段 C 恢复 13 点后的最新口径（276 / 203 / 68）。本仓库以 02 的表格与 <code>characteristic_domain.csv</code> 为准，并在 <code>docs/07</code> 中列为已知文档不一致。</blockquote>
+<h2 id="5-3-输出能力-io-随-vo-单调下降-电压上限由-fn-决定">5.3 输出能力：Io 随 Vo 单调下降，电压上限由 fn 决定</h2>
+<p>在 <code>k=0.2</code> 的采样集合中，每个 <code>fn</code> 能到达的最高充电电压：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left"><code>fn</code></th>
+<th class="align-right">1.1</th>
+<th class="align-right">1.2</th>
+<th class="align-right">1.275</th>
+<th class="align-right">1.3</th>
+<th class="align-right">1.375</th>
+<th class="align-right">1.4</th>
+<th class="align-right">1.5</th>
+<th class="align-right">1.6</th>
+<th class="align-right">1.7</th>
+<th class="align-right">1.8</th>
+<th class="align-right">1.9</th>
+<th class="align-right">2.0</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">最高 <code>Vo</code>/V</td>
+<td class="align-right">400</td>
+<td class="align-right">475</td>
+<td class="align-right">550</td>
+<td class="align-right">600</td>
+<td class="align-right">700</td>
+<td class="align-right">750</td>
+<td class="align-right"><strong>800</strong></td>
+<td class="align-right">650</td>
+<td class="align-right">500</td>
+<td class="align-right">375</td>
+<td class="align-right">300</td>
+<td class="align-right">250</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>并非“频率越高越能升压”：<code>fn</code> 从 1.5 继续升高，电压覆盖反而收缩。</li>
+<li>只有 <code>fn=1.5</code> 覆盖到 800 V；<code>fn=1.4</code> 到 750 V，<code>fn=1.3</code> 到 600 V，<code>fn=1.1</code> 只到 400 V。</li>
+<li>因此<strong>定频充电在 50–800 V 全程不可行</strong>；可行轨迹必须随 <code>Vo</code> 抬升逐步提高 <code>fn</code>，并停留在可行域内部。</li>
+<li><code>fn=1.0</code> 整列没有可验收充电解：17 点中 9 个全阻断族、8 个未决。这是串联谐振点附近条件数极差的<strong>数值奇异</strong>，不能写成“物理上不能充电”。</li>
+</ul>
+<p><img src="../figures/normalized/fig01_Io_vs_M_by_fn.png" alt="图 5-1 k=0.2 下 Io–M 随 fn 变化" loading="lazy"></p>
+<h2 id="5-4-电流应力-低压大环流-550-600-v-交叉">5.4 电流应力：低压大环流、550–600 V 交叉</h2>
+<ul>
+<li>全数据集最大 <code>Im</code>：<strong>28.755 A</strong>，出现在 <code>Vo=25 V、fn=1.10、k=0.2</code>；对应 <code>Io=3.888 A</code>、<code>Irms=20.064 A</code>。</li>
+<li>低电压、低频率时，谐振腔电流主要是 <code>Ls–Cs–Cp</code> 的无功环流，<code>Im</code> 很大。</li>
+<li>500–600 V 附近，各频率的 <code>Im</code> 曲线高度汇聚，随后次序反转：750 V 处 <code>Im(fn=1.4)=11.90 A &lt; Im(fn=1.5)=12.99 A</code>。</li>
+<li>交叉不是插值求出来的，而是由三个已验收区间夹住：</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">比较</th>
+<th class="align-left">变号区间</th>
+<th class="align-right">左端差/A</th>
+<th class="align-right">右端差/A</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Im(fn1.4) − Im(fn1.5)</code></td>
+<td class="align-left">560 → 570 V</td>
+<td class="align-right">+0.0074</td>
+<td class="align-right">−0.0418</td>
+</tr>
+<tr>
+<td class="align-left"><code>Im(fn1.4) − Im(fn1.6)</code></td>
+<td class="align-left">580 → 590 V</td>
+<td class="align-right">+0.0402</td>
+<td class="align-right">−0.0462</td>
+</tr>
+<tr>
+<td class="align-left"><code>Im(fn1.5) − Im(fn1.6)</code></td>
+<td class="align-left">600 → 650 V</td>
+<td class="align-right">+0.0556</td>
+<td class="align-right">−0.1138</td>
+</tr>
+</tbody></table></div>
+<p>报告只给变号区间，没有给出“563.7 V”这类精确交叉点；不要伪造插值根。</p>
+<p>工程含义：</p>
+<ol>
+<li>器件选型不能只看额定工作点；全阻断族的应力可能高于可充电点（例如 <code>fn=1.5</code>、600–800 V 空载全阻断 <code>Im≈14.5 A</code>，高于同电压可充电点的 11.4–13.6 A）。</li>
+<li>变频率充电跨越 550–600 V 时要平滑过渡，否则会出现应力次序切换。</li>
+</ol>
+<p><img src="../figures/normalized/fig02_Im_vs_M_by_fn.png" alt="图 5-2 k=0.2 下 Im–M 随 fn 变化（含全阻断族）" loading="lazy"></p>
+<p><img src="../figures/normalized/fig08_crossing_check.png" alt="图 5-3 550 V 附近交叉核验" loading="lazy"></p>
+<h2 id="5-5-电容比-k-用电流换刚度">5.5 电容比 k：用电流换刚度</h2>
+<p>固定 <code>fn=1.4</code>，只改变 <code>k</code>：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left"><code>k</code></th>
+<th class="align-right">0.1</th>
+<th class="align-right">0.2</th>
+<th class="align-right">0.35</th>
+<th class="align-right">0.5</th>
+<th class="align-right">0.8</th>
+<th class="align-right">1.0</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">400 V 最大 <code>Io</code>/A</td>
+<td class="align-right">0.860</td>
+<td class="align-right"><strong>1.859</strong></td>
+<td class="align-right">1.020</td>
+<td class="align-right">无 HOGA 解*</td>
+<td class="align-right">无 HOGA 解</td>
+<td class="align-right">无 HOGA 解</td>
+</tr>
+<tr>
+<td class="align-left">800 V 最大 <code>Io</code>/A</td>
+<td class="align-right">—</td>
+<td class="align-right"><strong>0.800</strong></td>
+<td class="align-right">—</td>
+<td class="align-right">0.203（开关锚点）</td>
+<td class="align-right">—</td>
+<td class="align-right">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>fn=1.4</code> 求解域上限/V</td>
+<td class="align-right">500</td>
+<td class="align-right">750</td>
+<td class="align-right">600</td>
+<td class="align-right">350（HOGA）</td>
+<td class="align-right">150</td>
+<td class="align-right">100</td>
+</tr>
+</tbody></table></div>
+<p><code>*</code> <code>k=0.5</code> 在 400–800 V 有独立开关模型锚点，<code>Io</code> 0.775→0.203 A、<code>Im</code> 15.0→24.8 A，周期变化约 0.002%；这不是 HOGA 解，但证明“物理上存在导通周期解”。所以 <code>k=0.5</code> 的 350 V 是<strong>求解器/模式发现边界</strong>，不是物理边界。</p>
+<p><code>k</code> 的机理：</p>
+<ul>
+<li><code>Cp_delta</code> 折算到平衡星为 <code>3k·Cs</code>；</li>
+<li>空载谐振点 <code>f_open/fr = √(1 + 1/(3k))</code>，随 <code>k</code> 由 2.08 降到 1.15；</li>
+<li>固定 <code>fn=1.4</code> 时，<code>k=0.1</code> 远低于空载谐振，<code>k=0.5</code> 已高于它；</li>
+<li>越过空载谐振点不会关闭电压能力，而是把谐振腔变“硬”：同一电压下可用电流减小、环流增大。</li>
+</ul>
+<p>因此：</p>
+<ul>
+<li>要覆盖 800 V，六个采样值里 <code>k≈0.2</code> 的末端电流最大（0.800 A）；</li>
+<li>只需覆盖 400 V，<code>k≈0.35</code> 更优（1.020 A）；</li>
+<li><code>k≥0.8</code> 会把可用区间压到 200 V 以下，不适合 50–800 V 目标；</li>
+<li>跨 <code>k</code> 比较时用 <code>fn/f_open</code> 比 <code>fn</code> 更合理，但不能把某个 <code>fn/f_open</code> 区间当作“可达 800 V”的充分判据。</li>
+</ul>
+<p><img src="../figures/normalized/fig03_k_effect.png" alt="图 5-4 六个 k 的 Io/Im 对比（fn=1.4）" loading="lazy"></p>
+<h2 id="5-6-二维工作域">5.6 二维工作域</h2>
+<p><code>M–fn</code> 平面上的可充电区域呈楔形：</p>
+<ul>
+<li>上边界随 <code>Vo</code> 升高向低 <code>fn</code> 收缩；</li>
+<li><code>fn≥1.70</code> 时，400 V 以上基本消失；</li>
+<li>零换流裕度等值线从约 <code>(420 V, fn=1.0)</code> 弯向 <code>(800 V, fn=1.5)</code>；</li>
+<li>虚线右下方“能充电但换流电流非全正”，虚线上方“换流有利但充不上去”。</li>
+</ul>
+<p>两条边界的物理性质不同：</p>
+<ul>
+<li>换流电流方向是开关过程的<strong>必要条件</strong>，不是 ZVS 认证；</li>
+<li>能量/增益约束才是“能不能传能”的边界。</li>
+</ul>
+<p><img src="../figures/normalized/fig04_Io_operating_map.png" alt="图 5-5 M–fn 二维 Io 工作域" loading="lazy"></p>
+<p><img src="../figures/normalized/fig05_Im_stress_map.png" alt="图 5-6 M–fn 二维 Im 应力图" loading="lazy"></p>
+<h2 id="5-7-调频能降应力-但不能改善-单位输出的应力代价">5.7 调频能降应力，但不能改善“单位输出的应力代价”</h2>
+<p>在每个固定电压断面，提高 <code>fn</code> 确实同时降低 <code>Io</code> 与 <code>Im</code>，但两者不成比例：</p>
+<ul>
+<li>100 V：<code>fn</code> 由 1.10 升到 2.00，<code>Io</code> 降 89%，<code>Im</code> 只降 85%；<code>Im/Io</code> 反而由 7.4 升到 9.9 A/A；</li>
+<li>400 V：<code>Im/Io</code> 由 8.4 升到 13.8。</li>
+</ul>
+<p>所以：</p>
+<ul>
+<li>调频可以减小<strong>绝对</strong>应力；</li>
+<li>但不能改善<strong>单位输出</strong>的应力代价；</li>
+<li>要改善后者，只能改 <code>k</code>、<code>n</code>、<code>Ls/Cs</code> 这类参数级手段。</li>
+</ul>
+<p>在 100 V，若只要求最大采样电流的 25%，可把 <code>Irms</code> 从 20.18 A 降到 5.96 A（−70.5%），代价是 <code>Io</code> 降到约 1/4、充电时间约 4 倍；400 V 同口径可降 46.3%；600 V 只有 15.9%，而且 <code>fn=1.30</code> 点不满足六次换流电流全正；800 V 只有一个可充电采样点（<code>fn=1.50</code>），频率自由度为零。</p>
+<h2 id="5-8-开关模型交叉验证">5.8 开关模型交叉验证</h2>
+<p>18 次独立开关模型记录，17 次通过（1 次失败为 700 V/fn1.10 全阻断族，末周期与前周期仍差 1.684%，未进入周期稳态；用零均值开路门极映射初值重做后通过）。</p>
+<p>通过点的最大值：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">指标</th>
+<th class="align-right">最大相对误差</th>
+<th class="align-left">出现工况</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>Io</code></td>
+<td class="align-right">0.0620%</td>
+<td class="align-left">350 V/fn1.4/k0.5</td>
+</tr>
+<tr>
+<td class="align-left"><code>Im</code></td>
+<td class="align-right">0.623%</td>
+<td class="align-left">400 V/fn1.4/k1.0</td>
+</tr>
+<tr>
+<td class="align-left"><code>Irms</code></td>
+<td class="align-right">0.0159%</td>
+<td class="align-left">400 V/fn1.4/k1.0</td>
+</tr>
+<tr>
+<td class="align-left">波形 L2</td>
+<td class="align-right">0.232%</td>
+<td class="align-left">400 V/fn1.4/k1.0</td>
+</tr>
+<tr>
+<td class="align-left"><code>Vo</code> 漂移</td>
+<td class="align-right">0.00449%</td>
+<td class="align-left">100 V/fn1.1/k0.2</td>
+</tr>
+</tbody></table></div>
+<p>注意：</p>
+<ul>
+<li>全阻断族的 <code>Io</code> 相对误差是 <code>NaN</code>（分母为 0），要用绝对误差；</li>
+<li><code>k=0.35</code> 与 <code>k=0.8</code> 没有开关验证点；</li>
+<li>400 V/k0.5 因无 HOGA 参考解，没有做同点 HOGA–Simulink 对比；其开关锚点只证明“存在导通周期解”。</li>
+</ul>
+<h2 id="5-9-结论与边界">5.9 结论与边界</h2>
+<p>在本模型、本参数、本扫描内：</p>
+<ol>
+<li><code>Io</code> 随 <code>Vo</code> 单调下降，电压上限由 <code>fn</code> 决定；只有中间频率区间能覆盖到 800 V。</li>
+<li><code>Im</code> 在低压低频最大；550–600 V 附近出现频率次序反转。</li>
+<li><code>k</code> 增大使高压段电流迅速下降、环流上升；<code>k≈0.2</code> 适合 800 V，<code>k≈0.35</code> 适合 400 V。</li>
+<li>调频降低绝对应力，但不改善单位输出的应力代价。</li>
+<li>68 个未决点不能写成“物理无解”；至少 <code>k=0.5</code> 的 9 个点已被开关模型证明存在导通解。</li>
+<li>全阻断族不是“实际充电可达”；它只说明“整流桥不导通、<code>Io=0</code> 的周期解存在”。</li>
+<li>没有 ZVS 认证、损耗/温升、闭环充电动态或硬件实验。</li>
+</ol>
+<h2 id="5-10-来源">5.10 来源</h2>
+<ul>
+<li><code>reports/normalized/02_扫描与求解状态.md</code></li>
+<li><code>reports/normalized/05_结果与讨论.md</code></li>
+<li><code>data/normalized/characteristic_domain.csv</code></li>
+<li><code>data/normalized/switching_validation_all.csv</code></li>
+<li><code>data/normalized/switch_model_anchors.csv</code></li>
+<li><code>data/normalized/crossing_brackets.csv</code></li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

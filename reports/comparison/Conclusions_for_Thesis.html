@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>可用于硕士论文的结论边界 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../../index.html">总览</a>
+    <a href="../../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../../docs/04_模型对比结果.html">结果</a>
+    <a href="../../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../../docs/07_局限与证据等级.html">边界</a>
+    <a href="../../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#已有仿真证据">已有仿真证据</a><a class="lvl2" href="#有推导-尚待动态仿真">有推导、尚待动态仿真</a><a class="lvl2" href="#仍需实验">仍需实验</a><a class="lvl2" href="#不应宣称">不应宣称</a></aside>
+<article class="content">
+<blockquote><strong>归档说明</strong>：本文是原项目报告的公开归档版；数值与结论未改，仅将本机绝对路径替换为占位符、把图片指向本仓库 <code>reports/accuracy_figures/</code>。原文中未随包迁移的内部 CSV/目录链接可能失效；可复现数据以 <code>data/</code> 与 <code>docs/08_文件与证据索引.md</code> 为准。</blockquote>
+<h1 id="可用于硕士论文的结论边界">可用于硕士论文的结论边界</h1>
+<h2 id="已有仿真证据">已有仿真证据</h2>
+<ol>
+<li>本50 V、Δ/Y三相LCC的六维差模状态空间与共用六管整流桥必须整体建模，三个独立单相模型不能保持实际整流约束。</li>
+<li>事件增强HOGA保留Cp的非线性导通约束。高次电流谐波能改善本次20点的波形、RMS和峰值预测；平均输出误差小不能替代瞬时量验证。</li>
+<li>独立EDF以正弦电流和Cp/桥的周期描述函数闭合，能保留两管、三管及截止窗口，但不包含高次电压对高次电流的反馈。</li>
+<li>本FHA的整流等效由端口关系推导，Rac随Vo/Io变化。其在本参数的中高输出电压区存在明显偏差，不能用无条件“基波足够准确”概括。</li>
+<li>100 V存在三管导通，800 V/280 kHz含全截止区间；800 V/240和260 kHz属于全截止代表解族。因此必须按工况标注CCM边界。</li>
+<li>物理守卫、独立参考和阶数收敛缺一不可。负二极管电流候选即使代数残差很小，也不能作为物理解。</li>
+</ol>
+<p>精确数值及图表引用<a href="Model_Comparison_Report.html">Model_Comparison_Report.md</a>、<a href="../../data/comparison/error_statistics.csv">Error_Statistics.csv</a>和<a href="../../data/comparison/harmonic_convergence.csv">Harmonic_Convergence.csv</a>，不从摘要抄写未注明基值的百分数。</p>
+<h2 id="有推导-尚待动态仿真">有推导、尚待动态仿真</h2>
+<p>EDF包络动态、输出电容慢变量耦合、快速变频、全局稳定性、分支可达性以及非平衡三相参数。本文实现和验收限定周期稳态；不能把静态Io(Vo,fs)曲线积分后的估算写成详细充电验证。</p>
+<h2 id="仍需实验">仍需实验</h2>
+<p>真实死区、器件Coss与反恢复、变压器励磁/漏感及寄生、电感饱和、铜铁损温升、EMI、制造绝缘和实际充电/停充过冲。当前不提供器件安全裕度或硬件定型结论。</p>
+<h2 id="不应宣称">不应宣称</h2>
+<ul>
+<li>所有EDF/FHA都天然不如HOGA，或升阶误差必然单调下降。</li>
+<li>已取得Bhat/Zheng原文公式或复现其特定电路实验。</li>
+<li>全部20点都是Simulink开关扫描；Simulink实际为3点，其他点为独立事件ODE。</li>
+<li>只凭周期残差证明全局唯一、启动可达、全程CCM或ZVS。</li>
+<li>本次重构修复带来了历史V2.3相对于legacy的所有精度提高。</li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

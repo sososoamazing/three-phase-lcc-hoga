@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+
+# MATLAB / Simulink caches (not part of the archive)
+slprj/
+*.slxc
+*.autosave
+*.asv
+*.m~
+*.mdl~
+
+# Logs
+*.log
+runtime/
+
+# Local env
+.env
+.venv/

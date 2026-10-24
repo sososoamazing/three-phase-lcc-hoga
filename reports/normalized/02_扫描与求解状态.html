@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 扫描与求解状态、数值验收 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../../index.html">总览</a>
+    <a href="../../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../../docs/04_模型对比结果.html">结果</a>
+    <a href="../../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../../docs/07_局限与证据等级.html">边界</a>
+    <a href="../../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#1-归一化定义与固定参数">1 归一化定义与固定参数</a><a class="lvl2" href="#2-模型真值与来源核验">2 模型真值与来源核验</a><a class="lvl2" href="#3-两阶段扫描与最终定义域">3 两阶段扫描与最终定义域</a><a class="lvl2" href="#4-数值验收与收敛">4 数值验收与收敛</a><a class="lvl2" href="#5-未决域的分布与解释">5 未决域的分布与解释</a><a class="lvl2" href="#5a-阶段-c-恢复扫描-81-个未决点">5A 阶段 C 恢复扫描（81 个未决点）</a><a class="lvl2" href="#6-记录缺陷与不可声称项">6 记录缺陷与不可声称项</a><a class="lvl2" href="#7-复现">7 复现</a></aside>
+<article class="content">
+<blockquote><strong>归档说明</strong>：本文是原项目报告的公开归档版；数值与结论未改，仅将本机绝对路径替换为占位符、把图片指向本仓库 <code>reports/accuracy_figures/</code>。原文中未随包迁移的内部 CSV/目录链接可能失效；可复现数据以 <code>data/</code> 与 <code>docs/08_文件与证据索引.md</code> 为准。</blockquote>
+<h1 id="02-扫描与求解状态-数值验收">02 扫描与求解状态、数值验收</h1>
+<p>本报告只记录<strong>实际运行过</strong>的求解与验收结果。所有数字可由 <code>tables/</code> 下同名 CSV 复算；未决点一律保留，不做插值、不延长曲线、不用小正电压结果冒充 0 V。</p>
+<h2 id="1-归一化定义与固定参数">1 归一化定义与固定参数</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">量</th>
+<th class="align-left">值</th>
+<th class="align-left">说明</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Vin</td>
+<td class="align-left">50 V</td>
+<td class="align-left">三桥臂共用输入</td>
+</tr>
+<tr>
+<td class="align-left">Ls</td>
+<td class="align-left">4.7 µH</td>
+<td class="align-left">每条馈线串联电感，六个 k 与全部 fn 下不变</td>
+</tr>
+<tr>
+<td class="align-left">Cs</td>
+<td class="align-left">135 nF</td>
+<td class="align-left">每条馈线串联电容，固定</td>
+</tr>
+<tr>
+<td class="align-left">fr</td>
+<td class="align-left">199804.064427 Hz</td>
+<td class="align-left">fr = 1/(2π√(LsCs))，唯一频率基准</td>
+</tr>
+<tr>
+<td class="align-left">Z0</td>
+<td class="align-left">5.900408 Ω</td>
+<td class="align-left">Z0 = √(Ls/Cs)，用于 Jo/Jm/Jrms 归一</td>
+</tr>
+<tr>
+<td class="align-left">fn</td>
+<td class="align-left">1.00–2.00</td>
+<td class="align-left">fn = fs/fr；对应 fs = 199.804–399.608 kHz</td>
+</tr>
+<tr>
+<td class="align-left">k</td>
+<td class="align-left">0.1 / 0.2 / 0.35 / 0.5 / 0.8 / 1.0</td>
+<td class="align-left">k = Cp,Δ/Cs，Δ 每条边；Cp,Δ = 13.5/27/47.25/67.5/108/135 nF</td>
+</tr>
+<tr>
+<td class="align-left">n</td>
+<td class="align-left">4</td>
+<td class="align-left">单绕组 Ns/Np；不额外乘 √3</td>
+</tr>
+<tr>
+<td class="align-left">Co</td>
+<td class="align-left">3.125 µF</td>
+<td class="align-left">两只 6.25 µF 串联的等效值</td>
+</tr>
+<tr>
+<td class="align-left">Rin / Vf</td>
+<td class="align-left">1 mΩ / 0.6 V</td>
+<td class="align-left">保留的参考非理想量</td>
+</tr>
+</tbody></table></div>
+<p>k_star = 3k 只用于平衡星等效推导（见 04 与 09 图），主数据始终用实际 Δ 参数。改变 k 时<strong>不重新定义 fr</strong>，只改变每条边的 Cp,Δ。</p>
+<p>两个必须随图一起读的无量纲量：Rin/Z0 = 1.6948×10⁻⁴、Vf/Vin = 0.012。因此本轮曲线不是"无损、任意器件"的唯一通用图；它们是<strong>同一参考电路族</strong>内的通用特性。</p>
+<h2 id="2-模型真值与来源核验">2 模型真值与来源核验</h2>
+<ul>
+<li>主电路 <code>MATLAB_PRJ/three_phase/simulink/three_phase_LCC.slx</code>，SHA-256 = <code>807db96a…8e28faa0</code>，本轮独立复算一致。</li>
+<li><code>audit/source_manifest.json</code> 的 28 个来源文件本轮全部重新哈希，<strong>0 处不一致</strong>（<code>summary.json</code> 的 <code>source_files_unchanged = 28</code>，<code>source_mismatch</code> 为空）。</li>
+<li>数学主线为当前发布 V2.3；V2.2 快照只作 HOGA 初值，所有新网格重新求解。</li>
+<li>三个回归（100 V/H15、400 V/H31、800 V/H31）在交接前已通过，相对电流差约机器精度；本轮未重跑，也不声称重跑过。</li>
+</ul>
+<h2 id="3-两阶段扫描与最终定义域">3 两阶段扫描与最终定义域</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">阶段</th>
+<th class="align-left">计划点</th>
+<th class="align-left">现存原始 MAT</th>
+<th class="align-left">通过</th>
+<th class="align-left">其中充电</th>
+<th class="align-left">其中全阻断族</th>
+<th class="align-left">未决</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">A（Vo 0:50:800 × fn 1:0.1:2，另 fn=1.4 六个 k）</td>
+<td class="align-left">272</td>
+<td class="align-left">259</td>
+<td class="align-left">176</td>
+<td class="align-left">115</td>
+<td class="align-left">61</td>
+<td class="align-left">96（首次运行状态）</td>
+</tr>
+<tr>
+<td class="align-left">B（自适应 168 点）</td>
+<td class="align-left">168</td>
+<td class="align-left">168</td>
+<td class="align-left">87</td>
+<td class="align-left">75</td>
+<td class="align-left">12</td>
+<td class="align-left">81</td>
+</tr>
+<tr>
+<td class="align-left">C（恢复扫描：B 后全部 81 个未决点）</td>
+<td class="align-left">81</td>
+<td class="align-left">81</td>
+<td class="align-left">13</td>
+<td class="align-left">13</td>
+<td class="align-left">0</td>
+<td class="align-left">68</td>
+</tr>
+<tr>
+<td class="align-left"><strong>并集（唯一点）</strong></td>
+<td class="align-left"><strong>440</strong></td>
+<td class="align-left"><strong>508 条记录 / 344 唯一点</strong></td>
+<td class="align-left"><strong>276</strong></td>
+<td class="align-left"><strong>203</strong></td>
+<td class="align-left"><strong>73</strong></td>
+<td class="align-left"><strong>68</strong></td>
+</tr>
+</tbody></table></div>
+<ul>
+<li>A 与 B 在 83 个坐标上重合；按"已通过 &gt; 更高阶 &gt; C &gt; B &gt; A"的优先级取唯一代表，得到 344 个唯一点。阶段 C 不新增坐标，只重解既有未决点。</li>
+<li><strong>阶段 B 新增 41 点</strong>（交接时 B 剩 41 点）：13 点得到充电解、1 点为全阻断族、27 点仍未决。</li>
+<li><strong>阶段 C 恢复扫描</strong>（见第 5 节）：对 B 后仍属未决的 81 点做跨频率/链式延拓，<strong>13 点得到充电解、68 点仍未决</strong>。</li>
+<li>全阻断周期族（73 点）只说明"整流桥不导通、Io=0 的周期解存在"，<strong>不证明实际充电可达，也不证明该电压物理上不能充电</strong>。</li>
+</ul>
+<h2 id="4-数值验收与收敛">4 数值验收与收敛</h2>
+<p>验收判据（<code>configuration.json</code> 与 <code>studyPoint.m</code> / <code>studyPointRefined.m</code> 内一致）：</p>
+<ul>
+<li>物理守卫：代数残差、二极管电压/互补、未裁剪反作用电流、能量残差全部通过；</li>
+<li>升阶：Io 与 Irms 相对变化 &lt; 0.5%、Im 相对变化 &lt; 1%、事件拓扑一致、事件时刻偏移 &lt; 0.001T；</li>
+<li>峰值：8 192 点重构后逐相极值再细化，不使用 √2·RMS 或基波幅值代替。</li>
+</ul>
+<p>实测：</p>
+<ul>
+<li>阶数分布：H31 共 257 点、H63 共 19 点；</li>
+<li>升阶最大变化：Io 0.1353%、Im 0.8486%、Irms 0.1579%（均低于阈值但 Im 已接近 1%）；</li>
+<li>峰值网格细化最大影响 6.23×10⁻⁵ %，说明 8192 点网格足以支撑 Im；</li>
+<li>203 个充电点<strong>全部为 CCM</strong>（blocked_fraction &lt; 10⁻⁸），本轮没有出现 DCM 充电点。CCM/DCM 按 <code>event_schedule</code> 中全阻断区间宽度分类，不按谐振电流是否过零判断。</li>
+</ul>
+<p>六次换流电流方向：203 个充电点中 191 点六次换流电流全部为正，12 点存在非正换流电流。方向为正只是<strong>ZVS 的必要条件</strong>，本轮不给出任何器件级 ZVS 认证（无 Coss、死区、门极与整流 Cj）。</p>
+<h2 id="5-未决域的分布与解释">5 未决域的分布与解释</h2>
+<p>68 个未决点按 fn 分布：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">fn</th>
+<th class="align-left">1.0</th>
+<th class="align-left">1.1</th>
+<th class="align-left">1.125</th>
+<th class="align-left">1.2</th>
+<th class="align-left">1.275</th>
+<th class="align-left">1.3</th>
+<th class="align-left">1.325</th>
+<th class="align-left">1.375</th>
+<th class="align-left">1.4</th>
+<th class="align-left">1.5</th>
+<th class="align-left">1.6</th>
+<th class="align-left">1.7</th>
+<th class="align-left">1.8</th>
+<th class="align-left">1.9</th>
+<th class="align-left">2.0</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">未决</td>
+<td class="align-left">8</td>
+<td class="align-left">1</td>
+<td class="align-left">1</td>
+<td class="align-left">1</td>
+<td class="align-left">1</td>
+<td class="align-left">2</td>
+<td class="align-left">1</td>
+<td class="align-left">1</td>
+<td class="align-left">20</td>
+<td class="align-left">0</td>
+<td class="align-left">4</td>
+<td class="align-left">7</td>
+<td class="align-left">9</td>
+<td class="align-left">7</td>
+<td class="align-left">5</td>
+</tr>
+</tbody></table></div>
+<p>按 k 分布：k=0.2 占 50 点，k=0.5 占 9 点，k=0.35 占 4 点，k=0.8 与 k=1.0 各 2 点，k=0.1 占 1 点。fn=1.4 的 20 点里 17 点来自 k 扫描。</p>
+<p>三类结构性未决，必须分开表述：</p>
+<ol>
+<li><strong>k 引起的求解域边界</strong>：k=0.5 在 400 V 以上（9 点）、k=0.8 在 200 V 以上（2 点）、k=1.0 在 150 V 以上（2 点）、k=0.35 在 600 V 以上（4 点）、k=0.1 在 500 V 以上（1 点）。第 5 节的开关模型锚点证明：k=0.5 在 400–800 V <strong>物理上仍有导通周期解</strong>（Io 0.775→0.203 A，周期性 0.002 %），而 k=0.8/1.0 在 400 V 已无输出（稳定全阻断）。因此这一类主要是<strong>求解器的模式发现问题</strong>，不是物理边界；但也不能反过来声称"HOGA 结果只差一点"。</li>
+<li><strong>高 fn 高压段</strong>（fn=1.6–2.0 在 350–800 V，共 32 点）：随 fn 升高，达到同一 Vo 所需的增益裕度迅速减小，充电解消失，只留下全阻断族或未决。</li>
+<li><strong>fn=1.0 整列</strong>（8 点）：串联谐振点附近条件数极差，属数值奇异，不作物理判断。</li>
+</ol>
+<p>fn=1.0 整列 17 点中 9 点为全阻断族、8 点未决，<strong>没有任何充电点</strong>。这不应写成"fn=1.0 物理上无法充电"：fn=1.0 正好是串联谐振点，串联支路基波阻抗趋零，牛顿迭代在该奇异点附近条件数很差，本轮所有候选都落到零电流/全阻断族。正确表述是：<strong>在本模型、本守卫与本初值策略下，fn=1.0 未获得可验收的充电解</strong>。</p>
+<h2 id="5a-阶段-c-恢复扫描-81-个未决点">5A 阶段 C 恢复扫描（81 个未决点）</h2>
+<p>交接说明中列为"尚未实施"的跨频率邻点延拓已在本轮实现（<code>runRecoveryStudy.m</code> + <code>studyPointRecovery.m</code>）。<strong>只改变初值策略</strong>，物理守卫与 H15→31→63 升阶检查完全不变：</p>
+<ol>
+<li>同 k、同 Vo、最近 fn 的已验收解（跨频率延拓，新增）；</li>
+<li>同 k、同 fn、最近 Vo 的已验收解（电压链，<strong>现在也包含 B 与 C 阶段</strong>，原 <code>studyPointRefined</code> 只读 A 阶段）；</li>
+<li>同 k、二维 (Vo, fn) 最近邻；</li>
+<li>本组内先行求解成功的 C 解（链式延拓，从已解电压向未解电压推进）；</li>
+<li>历史种子库、faces/support 拓扑提案；</li>
+<li>牛顿迭代上限由 100/1500 提高到 400/8000（纯数值设置，默认值不变，未放宽任何守卫）。</li>
+</ol>
+<p>结果：<strong>13 点恢复为充电解，68 点仍为未决</strong>。恢复的 13 点集中在两处：</p>
+<ul>
+<li><strong>Vo = 0 V 端点</strong>（fn=1.1、1.4@k=0.1、1.4@k=0.2、1.5、1.6、1.7、1.8、1.9、2.0，共 9 点）——此前因 legacy 回退要求 Vo&gt;0 而未决，现已在同一守卫下解出；</li>
+<li><strong>fn=1.20 的 200–350 V 段</strong>（4 点）——此前整条曲线在这一段断开，现已连续。</li>
+</ul>
+<p>68 个未恢复点的失败原因分两类，均已记录在 <code>tables/recovery_outcome.csv</code> 的 <code>error</code> / <code>status</code> 字段：</p>
+<ul>
+<li>收敛到局部极小：残差停在 1.3×10⁻² 量级（如 k=0.5 各点，closure ≈ 0.0129），牛顿在 12–16 次尝试内都无法降到 <code>hoga_tol</code>；</li>
+<li>收敛但模式非法：用 <code>release</code> 拓扑假设可把残差压到 5×10⁻¹⁶，但解包含"单只二极管单独导通"的区间，二极管反向电流 −0.138 A、法向残差 2.33 V（限值 0.40 V），被物理守卫正确拒绝。后者恰恰说明守卫在工作，不能被当作可接受解。</li>
+</ul>
+<p><strong>不得</strong>把"68 点未决"表述为"这些点物理无解"：对 k=0.5 的 9 点，开关模型已给出 0.002 % 周期的导通解（见 03 报告第 8 节）。</p>
+<p><code>Vo=0</code> 端点：仅在 Vd = Vo + 2Vf &gt; 0 时非退化；脚本内一处 legacy 回退仍要求 Vo &gt; 0，导致部分 0 V 候选未决。本轮没有用 25 V 的结果冒充 0 V。</p>
+<h2 id="6-记录缺陷与不可声称项">6 记录缺陷与不可声称项</h2>
+<ol>
+<li><strong>阶段标签缺陷</strong>：<code>studyPointRefined</code> 的 nargin 默认判断曾偏移一位，部分 B 结果被写入 A 目录。33 个受影响原始 MAT 已按字节归档在 <code>audit/phase_tag_recovery/raw</code>，并恢复为 B 检查点；默认判断已改正。本轮续算未再触发该问题。</li>
+<li><strong>13 个首次失败 A 点原始 MAT 未保留</strong>：这些文件在发现缺陷前已被替换。其完整状态行仍在 <code>tables/stage_A_initial_status.csv</code> 与 <code>audit/phase_tag_recovery/stage_A_initial_status.mat</code>；坐标后来由 B 重解，但<strong>首次尝试的原始波形不能声称仍在</strong>。清单见 <code>tables/historical_status_merge_audit.csv</code>。</li>
+<li>因此"399 条记录"这一历史口径已不适用。当前准确口径是：<strong>508 条原始记录（A 259 + B 168 + C 81）、344 个唯一点、13 个首次失败原始文件缺失（坐标已由 B 重解）</strong>。</li>
+<li>未决 ≠ 无周期解；单相 EDF/FHA 比较不作为本三相全域验证；冻结基波损耗不是整机损耗。</li>
+</ol>
+<h2 id="7-复现">7 复现</h2>
+<pre class="code"><code class="language-matlab">addpath('$PROJECT_ROOT/MATLAB_PRJ/three_phase/hoga_general_characteristics_20261020/scripts');
+runNormalizedStudy('B');      % 已存在检查点（含失败）自动跳过，不覆盖</code></pre>
+<pre class="code"><code class="language-text">python scripts/analyzeNormalizedStudy.py     % 重建唯一点、覆盖、Pareto、交叉与误差表
+matlab -batch "addpath('scripts'); addpath('core'); plotPaperFigures;"</code></pre>
+<p><code>runNormalizedStudy</code> 会调用 <code>collectStudy</code> 重写 <code>tables/all_solved_points.csv</code>（仅聚合现存 MAT）；历史初始状态表由 <code>analyzeNormalizedStudy.py</code> 单独合并审计，<strong>不要删除</strong> <code>tables/stage_A_initial_status.csv</code>。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

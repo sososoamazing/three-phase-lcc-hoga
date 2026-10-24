@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 论文精读：High-Order Generalized Averaging（TPEL 2024） · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#2-1-论文要解决的问题">2.1 论文要解决的问题</a><a class="lvl2" href="#2-2-核心数学工具">2.2 核心数学工具</a><a class="lvl2" href="#2-3-电路建模流程-论文第-iii-节">2.3 电路建模流程（论文第 III 节）</a><a class="lvl2" href="#2-4-开关信号建模-论文第-iv-节">2.4 开关信号建模（论文第 IV 节）</a><a class="lvl2" href="#2-5-三个实例与验证">2.5 三个实例与验证</a><a class="lvl2" href="#2-6-论文的假设与边界">2.6 论文的假设与边界</a><a class="lvl2" href="#2-7-与本项目三相-lcc-hoga-的关系">2.7 与本项目三相 LCC HOGA 的关系</a><a class="lvl2" href="#2-8-读论文时最容易误解的地方">2.8 读论文时最容易误解的地方</a><a class="lvl2" href="#2-9-引用建议">2.9 引用建议</a><a class="lvl2" href="#2-10-来源与许可">2.10 来源与许可</a></aside>
+<article class="content">
+<h1 id="02-论文精读-high-order-generalized-averaging-tpel-2024">02 论文精读：High-Order Generalized Averaging（TPEL 2024）</h1>
+<blockquote>论文：Hongchang Li, Kangping Wang, Jingyang Fang, Wenjie Chen, Xu Yang, <strong>“High-Order Generalized Averaging Method for Power Electronics Modeling From DC to Above Half the Switching Frequency,”</strong> <em>IEEE Transactions on Power Electronics</em>, vol. 40, no. 1, pp. 176–194, Jan. 2025. DOI: <a href="https://doi.org/10.1109/TPEL.2024.3450712">10.1109/TPEL.2024.3450712</a>。 本仓库 <code>paper/</code> 保存了论文 PDF（作者接受版，页脚标注 CC BY-NC-ND 4.0）。本文是阅读笔记，不是论文译文；公式和页码以原 PDF 为准。</blockquote>
+<h2 id="2-1-论文要解决的问题">2.1 论文要解决的问题</h2>
+<p>传统状态空间平均法只在“关注频率远低于开关频率一半”时有效，因为它把开关周期内的纹波平均掉了。采样数据模型、描述函数、EDF、广义平均等可以做到更高频，但通常：</p>
+<ul>
+<li>需要逐段时域波形推导；</li>
+<li>只保留 DC + 基波时，有效范围仍被限制在 <code>fs/2</code> 以下；</li>
+<li>多频/HSS 模型虽然能到 <code>fs/2</code> 以上，但常局限于 Buck 类 CCM 电路，且要把闭环控制一起纳入。</li>
+</ul>
+<p>论文的目标是：<strong>用移动 Fourier 系数（moving Fourier coefficients）建立一套统一的高阶广义平均（HOGA）框架，把有效频带从 DC 扩展到 <code>fs/2</code> 以上，并把电路与调制器/控制器分开建模。</strong></p>
+<h2 id="2-2-核心数学工具">2.2 核心数学工具</h2>
+<p>论文第 II 节给出移动 Fourier 系数的性质。对周期为 <code>T</code> 的信号 <code>x(t)</code>：</p>
+<pre class="code"><code class="language-text">&lt;x&gt;_n(τ) = (1/T) ∫_{τ-T/2}^{τ+T/2} x(t) e^{-jnωt} dt,   ω = 2π/T</code></pre>
+<p>关键性质（论文式 (4)–(23)）：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">性质</th>
+<th class="align-left">表达式</th>
+<th class="align-left">在建模中的作用</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">线性</td>
+<td class="align-left"><code>&lt;a x + b y&gt;_n = a&lt;x&gt;_n + b&lt;y&gt;_n</code></td>
+<td class="align-left">状态方程可以逐项变换</td>
+</tr>
+<tr>
+<td class="align-left">乘法</td>
+<td class="align-left"><code>&lt;x y&gt;_n = Σ_l &lt;x&gt;_l &lt;y&gt;_{n-l}</code></td>
+<td class="align-left">开关信号与状态相乘变成 Toeplitz 卷积</td>
+</tr>
+<tr>
+<td class="align-left">时导</td>
+<td class="align-left"><code>d/dt &lt;x&gt;_n = &lt;dx/dt&gt;_n + jnω&lt;x&gt;_n</code></td>
+<td class="align-left">把时变系统变成 LTP 形式</td>
+</tr>
+<tr>
+<td class="align-left">偏导</td>
+<td class="align-left"><code>∂&lt;x&gt;_n/∂&lt;y&gt;_m = &lt;∂x/∂y&gt;_{n-m}</code></td>
+<td class="align-left">小信号 Jacobian 的 Toeplitz 结构</td>
+</tr>
+<tr>
+<td class="align-left">Laplace</td>
+<td class="align-left"><code>L{&lt;x&gt;_n}(s) = sinc(...) · X(s+jnω)</code></td>
+<td class="align-left">解释“信号—边带”耦合</td>
+</tr>
+</tbody></table></div>
+<p>其中最重要的是<strong>乘法 → 离散卷积 → Toeplitz 矩阵</strong>。它使得：</p>
+<ul>
+<li>大信号模型可以写成 <code>K d&lt;x&gt;/dt = f(&lt;x&gt;, &lt;s&gt;, &lt;u&gt;)</code> 的形式；</li>
+<li>小信号模型在稳态工作点线性化后是 LTI 的，但状态变量是“各阶移动 Fourier 系数”，因此能描述边带耦合；</li>
+<li>关注频率可以超过 <code>fs/2</code>，因为模型里保留了 <code>±1, ±2, ..., ±H</code> 阶。</li>
+</ul>
+<h2 id="2-3-电路建模流程-论文第-iii-节">2.3 电路建模流程（论文第 III 节）</h2>
+<p>论文把理想电力电子电路写成以开关信号为参数的分段线性状态空间：</p>
+<pre class="code"><code class="language-text">K dx/dt = A(s) x + B(s) u
+y = C(s) x + D(s) u</code></pre>
+<p>然后：</p>
+<ol>
+<li>对状态、输入、开关信号取移动 Fourier 系数；</li>
+<li>用乘法性质把 <code>A(s)x</code> 变成 Toeplitz 卷积；</li>
+<li>得到大信号 HOGA 模型：</li>
+</ol>
+<pre class="code"><code class="language-text">K d&lt;x&gt;/dt = A(&lt;s&gt;) &lt;x&gt; + B(&lt;s&gt;) &lt;u&gt; - jNω K &lt;x&gt;</code></pre>
+<ol>
+<li>稳态时 <code>d&lt;x&gt;/dt = 0</code>，得到线性平衡方程：</li>
+</ol>
+<pre class="code"><code class="language-text">0 = A(&lt;s&gt;) &lt;x&gt; + B(&lt;s&gt;) &lt;u&gt; - jNω K &lt;x&gt;</code></pre>
+<ol>
+<li>在稳态点线性化，得到小信号 LTP → LTI 模型：</li>
+</ol>
+<pre class="code"><code class="language-text">K d&lt;x̃&gt;/dt = (A - jNωK) &lt;x̃&gt; + ... </code></pre>
+<ol>
+<li>由小信号模型计算传递函数矩阵，解释信号与边带的耦合。</li>
+</ol>
+<p>论文强调：<strong>电路和调制器/控制器可以分开建模，再线性组合</strong>。这是它相对于“把闭环一起塞进 HSS”的一个工程优势。</p>
+<h2 id="2-4-开关信号建模-论文第-iv-节">2.4 开关信号建模（论文第 IV 节）</h2>
+<p>这是论文对本项目最直接相关的部分之一。论文不要求先写出开关波形的时域表达式，而是用<strong>上升/下降时刻</strong>来描述开关信号：</p>
+<ul>
+<li>开关信号 <code>s(t)</code> 在 <code>[τ-T/2, τ+T/2)</code> 内有唯一的上升时刻 <code>t_r(τ)</code> 和下降时刻 <code>t_f(τ)</code>；</li>
+<li><code>&lt;s&gt;_0 = mod[(t_f - t_r)/T, 1]</code>；</li>
+<li><code>&lt;s&gt;_n = (1/(j n π)) e^{jn∠&lt;s&gt;_1} sin(nπ&lt;s&gt;_0)</code>（<code>n ≠ 0</code>）；</li>
+<li>对 <code>t_r</code>、<code>t_f</code> 的偏导有解析式。</li>
+</ul>
+<p>然后分三类讨论开关时刻如何由其他信号决定：</p>
+<ol>
+<li><strong>过零点</strong>：<code>x(t_0)=0</code>，得到 <code>∂t_0/∂&lt;x&gt;_m</code> 的解析式（论文式 (44)–(47)）。这适用于 DCM 二极管关断（电流过零）。</li>
+<li><strong>函数的过零点</strong>：<code>f(x,t)=0</code>，用链式法则得到 <code>∂t_0/∂&lt;x&gt;</code>（论文式 (49)–(53)）。这适用于 PSM/PFM 的载波过零。</li>
+<li><strong>PWM/PSM/PFM 的具体模型</strong>：PWM 用占空比与载波之差过零；PSM 用相位调制；PFM 把频率写成 <code>ω_s(t)=ω+α'(t)</code>，再转成 PSM 处理（论文式 (54)–(55)）。</li>
+</ol>
+<p>论文给出了 PWM 三种载波（三角、锯齿、反锯齿）的显式模型（Table 2），以及 CCM/DCM 下二极管互补/状态相关开关的模型。</p>
+<h2 id="2-5-三个实例与验证">2.5 三个实例与验证</h2>
+<p>论文第 V–VII 节分别建模：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">实例</th>
+<th class="align-left">控制</th>
+<th class="align-left">验证内容</th>
+<th class="align-left">关键结果</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">Boost</td>
+<td class="align-left">PWM</td>
+<td class="align-left">CCM/DCM 稳态波形、占空比—输出电压传递函数</td>
+<td class="align-left">在接近/超过 <code>fs/2</code> 时比传统平均模型准</td>
+</tr>
+<tr>
+<td class="align-left">Buck</td>
+<td class="align-left">V² 恒定导通时间</td>
+<td class="align-left">CCM/DCM、控制电压—输出电压传递函数</td>
+<td class="align-left">首次给出该控制的 DCM HOGA 模型；高频段优于描述函数模型</td>
+</tr>
+<tr>
+<td class="align-left">LLC</td>
+<td class="align-left">PFM</td>
+<td class="align-left">低于/高于谐振频率的稳态波形、频率—输出电压传递函数</td>
+<td class="align-left">在 80 kHz 与 120 kHz、调制到 150 kHz 时仍与实验吻合</td>
+</tr>
+</tbody></table></div>
+<p>论文实验里用了 <code>−49…+49</code> 阶移动 Fourier 系数（即 <code>H=49</code>），说明“几十阶”在实际中已经能得到很好的波形。论文也明确指出：<strong>截断会扭曲稳态波形并给传递函数带来误差；截断阶数与误差的定量关系是未来工作</strong>。</p>
+<h2 id="2-6-论文的假设与边界">2.6 论文的假设与边界</h2>
+<p>论文结论部分列出三条假设：</p>
+<ol>
+<li>信号有界变差（物理可实现信号满足）；</li>
+<li>电路由理想器件组成，可写成分段线性状态空间；</li>
+<li>变换器存在与稳态工作点对应的周期解。</li>
+</ol>
+<p>此外还有几条对使用者很重要的边界：</p>
+<ul>
+<li>模型理论上是无限维的，实际计算必须截断到有限阶；</li>
+<li>论文的验证是 Boost/Buck/LLC 三个单相例子，没有三相 Δ/Y LCC，也没有共用六管桥；</li>
+<li>论文的小信号模型是“在稳态周期解附近”的 LTP 线性化，不替代大信号充电轨迹；</li>
+<li>论文没有给出“截断阶数—误差”的严格上界，也没有证明周期解全局唯一或稳定；</li>
+<li>论文的 PFM 模型针对频率调制，不是“每个工作点固定频率”的冻结稳态求解。</li>
+</ul>
+<h2 id="2-7-与本项目三相-lcc-hoga-的关系">2.7 与本项目三相 LCC HOGA 的关系</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">论文内容</th>
+<th class="align-left">本项目对应</th>
+<th class="align-left">关系</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left">移动 Fourier 系数、<code>+jnω</code>、Toeplitz 卷积</td>
+<td class="align-left"><code>lcc3v2Hoga.m</code> 的复 Fourier 系数、<code>Kf</code>、<code>Pz/Qz</code> 卷积</td>
+<td class="align-left">直接采用其数学语言</td>
+</tr>
+<tr>
+<td class="align-left">分段线性状态空间 + 开关信号</td>
+<td class="align-left">六维差模状态 <code>x=[q,s,r]</code>，门控 <code>d</code>，六管整流</td>
+<td class="align-left">本项目把论文的“电路”扩展为三相 Δ/Y + 共用六管桥</td>
+</tr>
+<tr>
+<td class="align-left">开关时刻/过零模型</td>
+<td class="align-left">二极管事件、门控边沿 <code>0,1/6,...,5/6</code>、事件残差</td>
+<td class="align-left">本项目没有用论文的小信号过零偏导，而是把事件时刻作为未知量，直接闭周期解</td>
+</tr>
+<tr>
+<td class="align-left">稳态线性平衡方程</td>
+<td class="align-left"><code>lsqnonlin</code> 解事件残差 + 谱方程</td>
+<td class="align-left">本项目是<strong>事件增强的 Fourier-Galerkin 周期稳态</strong>，不是论文的线性平衡方程</td>
+</tr>
+<tr>
+<td class="align-left">小信号 LTP → LTI</td>
+<td class="align-left">未实现</td>
+<td class="align-left">本项目目前只做冻结周期稳态，没有做移动窗口小信号/变频动态</td>
+</tr>
+<tr>
+<td class="align-left">H=49 实验</td>
+<td class="align-left">AOC 验证用 H49；主比较用 H31</td>
+<td class="align-left">阶数选择受精度/成本权衡，不是论文的固定推荐</td>
+</tr>
+<tr>
+<td class="align-left">单相 Boost/Buck/LLC</td>
+<td class="align-left">三相 LCC</td>
+<td class="align-left">论文没有本拓扑的现成公式；本项目的三相方程、整流约束、事件闭合均为独立推导/实现</td>
+</tr>
+</tbody></table></div>
+<p>一句话总结：</p>
+<blockquote><strong>论文提供了“用多阶移动 Fourier 系数突破 fs/2”的一般理论、开关信号建模方法和 LTP 小信号框架；本项目把其中的多阶 Fourier 表示用于三相 Δ/Y LCC 的冻结周期稳态，并用事件增强 + 精确分段整流约束替换了论文的线性平衡/小信号部分。</strong></blockquote>
+<h2 id="2-8-读论文时最容易误解的地方">2.8 读论文时最容易误解的地方</h2>
+<ol>
+<li><strong>“HOGA 能到 fs/2 以上”不等于“任意阶数都准”</strong>。论文自己说截断误差没有定量上界；本项目也观察到升阶不保证每个指标单调变好。</li>
+<li><strong>论文的“state-dependent switching”是给小信号偏导用的</strong>。本项目把二极管事件作为精确约束直接求解，二者不是同一个数值问题。</li>
+<li><strong>论文的 LLC 是单相 PFM</strong>，不能把它的 LLC 公式直接套到三相 LCC；三相的 Δ/Y、共用六管桥、浮动中性点都要重新推导。</li>
+<li><strong>论文的 H=49 是实验选择</strong>，不是“必须 49 阶”；本项目在 20 点比较里用 H31，在 AOC 验证里用 H49，二者证据等级不同。</li>
+<li><strong>论文的传递函数是边带耦合的 LTI 表示</strong>，不是“把开关纹波当噪声”的粗略平均。</li>
+</ol>
+<h2 id="2-9-引用建议">2.9 引用建议</h2>
+<pre class="code"><code class="language-bibtex">@article{Li2025HOGA,
+  author  = {Li, Hongchang and Wang, Kangping and Fang, Jingyang and Chen, Wenjie and Yang, Xu},
+  title   = {High-Order Generalized Averaging Method for Power Electronics Modeling From {DC} to Above Half the Switching Frequency},
+  journal = {IEEE Transactions on Power Electronics},
+  year    = {2025},
+  volume  = {40},
+  number  = {1},
+  pages   = {176--194},
+  doi     = {10.1109/TPEL.2024.3450712}
+}</code></pre>
+<h2 id="2-10-来源与许可">2.10 来源与许可</h2>
+<ul>
+<li>PDF：<code>paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code></li>
+<li>论文页脚：<code>This work is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License.</code></li>
+<li>本笔记只做方法梳理和项目映射；论文原文的版权归作者/IEEE，引用请以 DOI 为准。</li>
+</ul>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>论文：High-Order Generalized Averaging（TPEL 2024） · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#文件">文件</a><a class="lvl2" href="#引用">引用</a><a class="lvl2" href="#许可">许可</a><a class="lvl2" href="#怎么读">怎么读</a><a class="lvl2" href="#与项目的关系">与项目的关系</a></aside>
+<article class="content">
+<h1 id="论文-high-order-generalized-averaging-tpel-2024">论文：High-Order Generalized Averaging（TPEL 2024）</h1>
+<h2 id="文件">文件</h2>
+<ul>
+<li><code>HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code>（4.89 MB）</li>
+<li>SHA-256：<code>569d906f6d1b4d9fcd707e767e20f6ebeda7cd52fc85481226bcc9e802c357bb</code></li>
+</ul>
+<h2 id="引用">引用</h2>
+<pre class="code"><code class="language-bibtex">@article{Li2025HOGA,
+  author  = {Li, Hongchang and Wang, Kangping and Fang, Jingyang and Chen, Wenjie and Yang, Xu},
+  title   = {High-Order Generalized Averaging Method for Power Electronics Modeling From {DC} to Above Half the Switching Frequency},
+  journal = {IEEE Transactions on Power Electronics},
+  year    = {2025},
+  volume  = {40},
+  number  = {1},
+  pages   = {176--194},
+  doi     = {10.1109/TPEL.2024.3450712}
+}</code></pre>
+<ul>
+<li>DOI: <a href="https://doi.org/10.1109/TPEL.2024.3450712">10.1109/TPEL.2024.3450712</a></li>
+<li>出版时间：2025 年 1 月（vol. 40, no. 1）；Online 2024-08-27。</li>
+</ul>
+<h2 id="许可">许可</h2>
+<p>PDF 页脚标注：</p>
+<blockquote>This work is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License. For more information, see https://creativecommons.org/licenses/by-nc-nd/4.0/</blockquote>
+<p>因此：</p>
+<ul>
+<li>本仓库<strong>原样分发、未修改</strong>该 PDF；</li>
+<li>不得用于商业用途；</li>
+<li>不得分发修改版；</li>
+<li>引用/转载请保留作者、标题、出处、DOI 与许可声明。</li>
+</ul>
+<p>PDF 同时是“作者接受版”（accepted for publication），与 IEEE 正式排版版本可能有细微差异；正式引用以 DOI 为准。</p>
+<h2 id="怎么读">怎么读</h2>
+<ol>
+<li>先读 <a href="../docs/02_论文精读_HOGA方法.html"><code>docs/02_论文精读_HOGA方法.md</code></a>，建立“移动 Fourier 系数 → 卷积/Toeplitz → 稳态/小信号 → 开关信号模型”的框架。</li>
+<li>再读 PDF 的第 II–IV 节（性质、电路模型、开关信号模型）。</li>
+<li>第 V–VII 节是 Boost/Buck/LLC 三个实例；重点看 LLC 的 PFM 处理，但注意它是<strong>单相</strong>。</li>
+<li>第 VIII 节结论列出三条假设和“截断误差无定量上界”的局限。</li>
+</ol>
+<h2 id="与项目的关系">与项目的关系</h2>
+<p>论文提供一般理论；本项目的三相 Δ/Y LCC、共用六管桥、事件增强 HOGA 是独立推导/实现。不要把论文的 Boost/Buck/LLC 公式直接套到本拓扑。详见 <a href="../docs/02_论文精读_HOGA方法.html"><code>docs/02</code></a> 的 2.7 节映射表。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

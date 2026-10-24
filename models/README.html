@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型文件 · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="alternate" type="text/markdown" href="../ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="../index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="../index.html">总览</a>
+    <a href="../docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="../docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="../docs/04_模型对比结果.html">结果</a>
+    <a href="../docs/05_归一化特性扫描.html">扫描</a>
+    <a href="../docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="../docs/07_局限与证据等级.html">边界</a>
+    <a href="../data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#打开前">打开前</a><a class="lvl2" href="#模型与证据的关系">模型与证据的关系</a><a class="lvl2" href="#校验">校验</a></aside>
+<article class="content">
+<h1 id="模型文件">模型文件</h1>
+<p>本目录保存 5 个 SLX。它们是二进制文件，GitHub 不能预览；请用 MATLAB R2024b + Simulink/Simscape Electrical 打开。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">文件</th>
+<th class="align-left">SHA-256</th>
+<th class="align-right">大小</th>
+<th class="align-left">用途</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>three_phase_LCC.slx</code></td>
+<td class="align-left"><code>807db96a073d18972c1fe0242bf7576570b5e862bdfc8a61c8d03aff8e28faa0</code></td>
+<td class="align-right">543,955</td>
+<td class="align-left">主电路源模型（审计基准）</td>
+</tr>
+<tr>
+<td class="align-left"><code>ideal_three_phase_LCC.slx</code></td>
+<td class="align-left"><code>70f0cdba4bc21c6e2c8b8722ee0408d7214c54cbcae104e3cb6cbddbcec8e1cc</code></td>
+<td class="align-right">559,398</td>
+<td class="align-left">近理想副本；<strong>二极管 <code>Vf=eps</code>，与 0.6 V 数学基准不同</strong></td>
+</tr>
+<tr>
+<td class="align-left"><code>lcc3_comparison.slx</code></td>
+<td class="align-left"><code>8491e14f7397fabbe370a0127b23c74e5ca228fa6986f8baefdf8d8dbbffa4c23</code></td>
+<td class="align-right">580,624</td>
+<td class="align-left">冻结输出电压的 Simulink 比较模型（Co 换成两个 <code>Vo/2</code> 电压源）</td>
+</tr>
+<tr>
+<td class="align-left"><code>AOC_charge.slx</code></td>
+<td class="align-left"><code>2f510c31c6ba1e55a59bf2d20da7733c0b3c74161c2c06ff9f577ca3c3a9c937</code></td>
+<td class="align-right">577,336</td>
+<td class="align-left">AOC 0→800 V 充电模型</td>
+</tr>
+<tr>
+<td class="align-left"><code>lcc3_frozen_aoc.slx</code></td>
+<td class="align-left"><code>8491e14f7397fabbe370a0127b23c74e5ca228fa6986f8baefdf8d8dbbffa4c23</code></td>
+<td class="align-right">580,624</td>
+<td class="align-left">AOC 冻结点模型；与 <code>lcc3_comparison.slx</code> <strong>字节相同</strong>（同哈希）</td>
+</tr>
+</tbody></table></div>
+<h2 id="打开前">打开前</h2>
+<ol>
+<li>确认 MATLAB R2024b、Simulink、Simscape、Simscape Electrical 已安装。</li>
+<li>不要直接改原模型；原项目约定“先复制到 <code>work/</code> 再改，<code>close_system(mdl,0)</code> 不保存”。</li>
+<li><code>ideal_three_phase_LCC.slx</code> 的 <code>Vf=eps</code> 与比较基准 0.6 V 不同；不要把旧三点结果归到它。</li>
+<li><code>lcc3_comparison.slx</code> 的输出电容已被两个 <code>Vo/2</code> 理想电压源替代，只用于冻结 <code>Vo</code> 的周期稳态；不是真实 3.125 μF 充电。</li>
+<li><code>AOC_charge.slx</code> 是 AOC 充电模型；<code>lcc3_frozen_aoc.slx</code> 是逐点冻结参考模型。</li>
+<li>本仓库没有 <code>slprj/</code>、<code>slxc</code> 缓存；首次打开/仿真会重新生成，属正常现象。</li>
+</ol>
+<h2 id="模型与证据的关系">模型与证据的关系</h2>
+<ul>
+<li>20 点比较的 <strong>主参考是独立事件 ODE</strong>，不是 Simulink；Simulink 只做 3 点交叉验证。</li>
+<li>AOC 20 点的参考是 <code>lcc3_frozen_aoc.slx</code>（冻结 <code>Vo</code>、24 周期、末周期 8192 点）。</li>
+<li>18 次开关验证用 <code>three_phase_LCC.slx</code> 的近冻结副本（<code>output_Co_scale=10000</code>），不是直接改原模型。</li>
+<li>模型不能替代报告中的数值；打开模型前先读 <code>docs/01</code>、<code>docs/03</code>、<code>docs/04</code>。</li>
+</ul>
+<h2 id="校验">校验</h2>
+<pre class="code"><code class="language-powershell">Get-FileHash models\three_phase_LCC.slx -Algorithm SHA256</code></pre>
+<p>应与上表一致。完整清单见仓库根 <code>SHA256SUMS.txt</code>。</p>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-24。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>

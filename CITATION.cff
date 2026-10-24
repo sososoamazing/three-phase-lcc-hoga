@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this archive, please cite it as below."
+title: "Three-Phase LCC Capacitor Charger: HOGA Modeling Archive"
+abstract: "Public archive of HOGA modeling, validation data and analysis for a 50 V to 800 V three-phase Delta/Y LCC resonant capacitor charger."
+type: software
+authors:
+  - name: "Three-Phase LCC HOGA Archive contributors"
+repository-code: "https://github.com/sososoamazing/three-phase-lcc-hoga"
+url: "https://sososoamazing.github.io/three-phase-lcc-hoga/"
+license: MIT
+keywords:
+  - three-phase LCC
+  - resonant converter
+  - capacitor charger
+  - high-order generalized averaging
+  - HOGA
+  - power electronics modeling
+references:
+  - type: article
+    title: "High-Order Generalized Averaging Method for Power Electronics Modeling From DC to Above Half the Switching Frequency"
+    authors:
+      - family-names: Li
+        given-names: Hongchang
+      - family-names: Wang
+        given-names: Kangping
+      - family-names: Fang
+        given-names: Jingyang
+      - family-names: Chen
+        given-names: Wenjie
+      - family-names: Yang
+        given-names: Xu
+    journal: "IEEE Transactions on Power Electronics"
+    volume: 40
+    issue: 1
+    start: 176
+    end: 194
+    year: 2025
+    doi: "10.1109/TPEL.2024.3450712"
