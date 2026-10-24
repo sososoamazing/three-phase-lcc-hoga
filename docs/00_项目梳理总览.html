@@ -32,7 +32,7 @@ window.MathJax = {
 </div></header>
 
 <main class="layout">
-<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#0-1-一句话">0.1 一句话</a><a class="lvl2" href="#0-2-研究对象">0.2 研究对象</a><a class="lvl2" href="#0-3-hoga-资产地图-四层">0.3 HOGA 资产地图（四层）</a><a class="lvl3" href="#第一层-理论来源">第一层：理论来源</a><a class="lvl3" href="#第二层-数学与代码">第二层：数学与代码</a><a class="lvl3" href="#第三层-验证与数据">第三层：验证与数据</a><a class="lvl3" href="#第四层-应用与解释">第四层：应用与解释</a><a class="lvl2" href="#0-4-项目时间线-与-hoga-相关">0.4 项目时间线（与 HOGA 相关）</a><a class="lvl2" href="#0-5-核心结论-按证据等级">0.5 核心结论（按证据等级）</a><a class="lvl3" href="#a-强的结论-有独立参考-严格验收">A. 强的结论（有独立参考/严格验收）</a><a class="lvl3" href="#b-中等强度的结论-有限样本-本地守卫">B. 中等强度的结论（有限样本/本地守卫）</a><a class="lvl3" href="#c-不能用的结论-已作废-未证实">C. 不能用的结论（已作废/未证实）</a><a class="lvl2" href="#0-6-版本与口径冲突">0.6 版本与口径冲突</a><a class="lvl2" href="#0-7-推荐阅读路径">0.7 推荐阅读路径</a><a class="lvl3" href="#5-分钟-只看结论">5 分钟（只看结论）</a><a class="lvl3" href="#30-分钟-建立正确模型观">30 分钟（建立正确模型观）</a><a class="lvl3" href="#2-小时-能复现-能评审">2 小时（能复现/能评审）</a><a class="lvl2" href="#0-8-这个仓库不是什么">0.8 这个仓库不是什么</a><a class="lvl2" href="#0-9-来源">0.9 来源</a></aside>
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#0-1-一句话">0.1 一句话</a><a class="lvl2" href="#0-2-研究对象">0.2 研究对象</a><a class="lvl2" href="#0-2a-工作区目录与-hoga-相关性">0.2A 工作区目录与 HOGA 相关性</a><a class="lvl2" href="#0-3-hoga-资产地图-四层">0.3 HOGA 资产地图（四层）</a><a class="lvl3" href="#第一层-理论来源">第一层：理论来源</a><a class="lvl3" href="#第二层-数学与代码">第二层：数学与代码</a><a class="lvl3" href="#第三层-验证与数据">第三层：验证与数据</a><a class="lvl3" href="#第四层-应用与解释">第四层：应用与解释</a><a class="lvl3" href="#0-3a-证据链-从模型到结论">0.3A 证据链（从模型到结论）</a><a class="lvl2" href="#0-4-项目时间线-与-hoga-相关">0.4 项目时间线（与 HOGA 相关）</a><a class="lvl2" href="#0-5-核心结论-按证据等级">0.5 核心结论（按证据等级）</a><a class="lvl3" href="#a-强的结论-有独立参考-严格验收">A. 强的结论（有独立参考/严格验收）</a><a class="lvl3" href="#b-中等强度的结论-有限样本-本地守卫">B. 中等强度的结论（有限样本/本地守卫）</a><a class="lvl3" href="#c-不能用的结论-已作废-未证实">C. 不能用的结论（已作废/未证实）</a><a class="lvl2" href="#0-6-版本与口径冲突">0.6 版本与口径冲突</a><a class="lvl2" href="#0-7-推荐阅读路径">0.7 推荐阅读路径</a><a class="lvl3" href="#5-分钟-只看结论">5 分钟（只看结论）</a><a class="lvl3" href="#30-分钟-建立正确模型观">30 分钟（建立正确模型观）</a><a class="lvl3" href="#2-小时-能复现-能评审">2 小时（能复现/能评审）</a><a class="lvl2" href="#0-8-这个仓库不是什么">0.8 这个仓库不是什么</a><a class="lvl2" href="#0-9-来源">0.9 来源</a></aside>
 <article class="content">
 <h1 id="00-项目梳理总览-三相-lcc-的-hoga-建模">00 项目梳理总览：三相 LCC 的 HOGA 建模</h1>
 <blockquote>本文是对整个工作区中“三相 LCC + HOGA”相关材料的梳理结果。它回答三个问题： 1. 这个项目里到底有哪些 HOGA 资产？ 2. 哪些结论能用、哪些已作废、哪些还没验证？ 3. 如果只看一个文件，应该看哪个？</blockquote>
@@ -43,6 +43,106 @@ window.MathJax = {
 → Δ 接 Cp 27 nF/边 + 三台 1:4 变压器（一次 Δ / 二次 Y 浮空）
 → 共用六二极管桥 → Co 6.25 μF × 2 串联 = 3.125 μF → Vo 0–800 V</code></pre>
 <p>详细拓扑、参数、状态方程见 <a href="01_拓扑与参数.html"><code>docs/01_拓扑与参数.md</code></a>。</p>
+<h2 id="0-2a-工作区目录与-hoga-相关性">0.2A 工作区目录与 HOGA 相关性</h2>
+<p>原工作区很大，但并不是所有目录都属于“三相 LCC HOGA 建模”。按相关性分四类：</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录/文件</th>
+<th class="align-left">与 HOGA 的关系</th>
+<th class="align-left">本仓库是否归档</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>model_comparison_HOGA_EDF_FHA/</code></td>
+<td class="align-left"><strong>核心</strong>：V2.3/H31/H49、EDF/FHA、20 点比较、审计、39 图</td>
+<td class="align-left">是（精选）</td>
+</tr>
+<tr>
+<td class="align-left"><code>MATLAB_PRJ/three_phase/simulink/</code></td>
+<td class="align-left"><strong>核心</strong>：主模型、近理想副本、比较模型</td>
+<td class="align-left">是（SLX）</td>
+</tr>
+<tr>
+<td class="align-left"><code>MATLAB_PRJ/three_phase/hoga_general_characteristics_20261020/</code></td>
+<td class="align-left"><strong>核心</strong>：344 点 fn/k 扫描、18 次开关验证、报告/图</td>
+<td class="align-left">是（精选）</td>
+</tr>
+<tr>
+<td class="align-left"><code>MATLAB_PRJ/three_phase/hoga_audit_v2_20261014/</code></td>
+<td class="align-left"><strong>核心</strong>：V2.3 源码与审计</td>
+<td class="align-left">是（代码）</td>
+</tr>
+<tr>
+<td class="align-left"><code>model_comparison_HOGA_EDF_FHA/charging_trajectory_AOC_10point_validation/</code></td>
+<td class="align-left"><strong>核心</strong>：AOC 20 点 H49 验证</td>
+<td class="align-left">是（精选）</td>
+</tr>
+<tr>
+<td class="align-left"><code>MATLAB_PRJ/three_phase/aoc_feasibility_20261017/</code></td>
+<td class="align-left">AOC 可行性/策略来源</td>
+<td class="align-left">否（只在文档中引用）</td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/kimi_mode_review_20261024/</code></td>
+<td class="align-left"><strong>交叉验证</strong>：12 联合区间、Cp 分段钳位；不是 HOGA 模型本身</td>
+<td class="align-left">否（只在文档中引用）</td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/waveform_modes_20261023/</code></td>
+<td class="align-left">旧模态划分；部分结论已作废</td>
+<td class="align-left">否（避免误引）</td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/three_phase_operating_modes_20261023/</code></td>
+<td class="align-left">工作模态主报告；与 HOGA 互为独立路径</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>LCC_HighVoltage_CCM_Study/50V_HOGA_code_walkthrough_20261010/</code></td>
+<td class="align-left"><strong>单相</strong> 50 V HOGA 方法来源，不是三相</td>
+<td class="align-left">否（只在文档中提方法谱系）</td>
+</tr>
+<tr>
+<td class="align-left"><code>LCC_HighVoltage_CCM_Study/demo_hoga_frequency_capacitance_20260927/</code></td>
+<td class="align-left"><strong>单相</strong> 773 点 HOGA 扫描，历史方法来源</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>LCC_HighVoltage_CCM_Study/single_phase_50V_800V_500W_20260927/</code></td>
+<td class="align-left"><strong>单相</strong> 14 μF/500 W 独立设计，不是三相</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>MATLAB_PRJ/demo/magnetics_*</code></td>
+<td class="align-left">磁件/损耗/制造；冻结基波，不是 HOGA 精度</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>doc/</code>、<code>thesis_50V800V_20261018/</code>、<code>thesis_innovation_debate/</code></td>
+<td class="align-left">学位论文/答辩/创新点材料</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>topology_comparison_20261020/</code></td>
+<td class="align-left">拓扑比较，不是 HOGA</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>research_validation/</code>、<code>tools/</code>、<code>frontend/</code></td>
+<td class="align-left">通用工具/展示</td>
+<td class="align-left">否</td>
+</tr>
+<tr>
+<td class="align-left"><code>_dsh_collab/</code>、<code>_codex_auto_resume_deploy/</code>、<code>.workbuddy/</code></td>
+<td class="align-left">内部协作/自动化记录</td>
+<td class="align-left">否（不公开）</td>
+</tr>
+</tbody></table></div>
+<p><strong>结论</strong>：三相 HOGA 的“主证据链”只集中在 4 个目录：</p>
+<pre class="code"><code class="language-text">model_comparison_HOGA_EDF_FHA/          # 比较 + 审计 + 代码
+MATLAB_PRJ/three_phase/simulink/        # 模型
+MATLAB_PRJ/three_phase/hoga_general_characteristics_20261020/  # 344 点扫描
+.../charging_trajectory_AOC_10point_validation/                # AOC 20 点</code></pre>
+<p>其余目录要么是单相方法来源，要么是模态/磁件/论文材料，不能混入 HOGA 精度统计。</p>
 <h2 id="0-3-hoga-资产地图-四层">0.3 HOGA 资产地图（四层）</h2>
 <h3 id="第一层-理论来源">第一层：理论来源</h3>
 <div class="table-wrap"><table>
@@ -171,6 +271,26 @@ window.MathJax = {
 <td class="align-left">冻结基波/工程估算；不能当整机损耗或硬件定型</td>
 </tr>
 </tbody></table></div>
+<h3 id="0-3a-证据链-从模型到结论">0.3A 证据链（从模型到结论）</h3>
+<pre class="code"><code class="language-text">three_phase_LCC.slx
+   │  独立 XML 接线审计
+   ▼
+拓扑/参数/六维方程  ──────────────┐
+   │                              │
+   ├─ V2.3 事件增强 HOGA ──┐      │
+   │                        ├─ 20 点 × 4 方法 ── 独立事件 ODE 主参考
+   │                        │                     └─ 3 点 Simulink 交叉
+   │                        ├─ 4 点 H31 严格验收
+   │                        ├─ 344 点归一化扫描 ── 18 次开关验证
+   │                        └─ AOC 20 点 H49 ── 冻结 Simulink 参考
+   │
+   └─ 独立事件 ODE 参考 ── 仅用于验收/对照，不进入 HOGA 求根</code></pre>
+<p>读这张图时注意：</p>
+<ul>
+<li>独立事件 ODE 与 HOGA <strong>共享物理假设</strong>，独立的是求解路径，不是“实验真值”。</li>
+<li>Simulink 是第三套路径，但只覆盖 3 点/18 次，不是全参数扫描。</li>
+<li>344 点扫描的“通过”是本地守卫 + 升阶，不等于 4 点 H31 的严格验收等级。</li>
+</ul>
 <h2 id="0-4-项目时间线-与-hoga-相关">0.4 项目时间线（与 HOGA 相关）</h2>
 <div class="table-wrap"><table>
 <thead><tr>
