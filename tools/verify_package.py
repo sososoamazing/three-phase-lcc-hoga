@@ -78,7 +78,7 @@ def main() -> int:
         counts["m"] += p.suffix.lower() == ".m"
         counts["slx"] += p.suffix.lower() == ".slx"
 
-        if p.suffix.lower() in TEXT_SUFFIXES and p.name != "verify_package.py":
+        if p.suffix.lower() in TEXT_SUFFIXES and p.name not in {"verify_package.py", "FILE_MANIFEST.csv", "INVENTORY.md", "INVENTORY.html"}:
             try:
                 text = p.read_text(encoding="utf-8")
             except UnicodeDecodeError:
