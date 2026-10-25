@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文件位置清单（INVENTORY） · 三相 LCC HOGA 建模资料库</title>
+<meta name="description" content="50 V → 800 V 三相 Δ/Y LCC 谐振电容充电电源的 HOGA 建模、20 点模型对比、344 点归一化扫描与 AOC 充电轨迹验证。">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="alternate" type="text/markdown" href="ONE_PAGE.md">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\(','\)']], displayMath: [['$$','$$'],['\[','\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="index.html">LCC<span>·</span>HOGA</a>
+  <nav class="nav">
+    <a href="index.html">总览</a>
+    <a href="docs/00_项目梳理总览.html">项目梳理</a>
+    <a href="docs/02_论文精读_HOGA方法.html">论文</a>
+    <a href="docs/04_模型对比结果.html">结果</a>
+    <a href="docs/05_归一化特性扫描.html">扫描</a>
+    <a href="docs/06_充电轨迹_AOC.html">AOC</a>
+    <a href="docs/07_局限与证据等级.html">边界</a>
+    <a href="data/README.html">数据</a>
+    <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a>
+  </nav>
+</div></header>
+
+<main class="layout">
+<aside class="toc"><h3>本页目录</h3><a class="lvl2" href="#0-根目录与元数据">0. 根目录与元数据</a><a class="lvl2" href="#1-文档-docs">1. 文档（docs/）</a><a class="lvl2" href="#2-论文-paper">2. 论文（paper/）</a><a class="lvl2" href="#3-数据-data">3. 数据（data/）</a><a class="lvl2" href="#4-精选图-figures">4. 精选图（figures/）</a><a class="lvl2" href="#5-代码-code">5. 代码（code/）</a><a class="lvl2" href="#6-模型-models">6. 模型（models/）</a><a class="lvl2" href="#7-报告归档-reports">7. 报告归档（reports/）</a><a class="lvl2" href="#8-工具-tools">8. 工具（tools/）</a><a class="lvl2" href="#9-站点资源-assets">9. 站点资源（assets/）</a><a class="lvl2" href="#10-生成的-html-页面">10. 生成的 HTML 页面</a><a class="lvl2" href="#11-远程访问">11. 远程访问</a></aside>
+<article class="content">
+<h1 id="文件位置清单-inventory">文件位置清单（INVENTORY）</h1>
+<blockquote>本文件给出每个归档文件的三处位置： 1. <strong>本地归档路径</strong>：<code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\...</code> 2. <strong>原项目路径</strong>：相对于 <code>E:\codex_prj\3_cap_power_supply</code>（新建文档/生成网页为空） 3. <strong>远程地址</strong>：见 <code>FILE_MANIFEST.csv</code> 的 <code>github_url</code> 与 <code>pages_url</code> 两列（下文为避免表格过宽不重复）。</blockquote>
+<p>完整逐文件表（含本地路径、原项目路径、远程 URL、SHA-256）：<a href="FILE_MANIFEST.csv"><code>FILE_MANIFEST.csv</code></a>。共 <strong>246</strong> 个归档文件（不含本清单 <code>INVENTORY.md</code> 与 <code>FILE_MANIFEST.csv</code> 自身）。</p>
+<h2 id="0-根目录与元数据">0. 根目录与元数据</h2>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">仓库路径</th>
+<th class="align-left">本地路径</th>
+<th class="align-left">原项目路径</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>.gitattributes</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\.gitattributes</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>.gitignore</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\.gitignore</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>.nojekyll</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\.nojekyll</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>CITATION.cff</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\CITATION.cff</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>LICENSE</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\LICENSE</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>LICENSE_DOCS.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\LICENSE_DOCS.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>llms.txt</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\llms.txt</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>ONE_PAGE.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\ONE_PAGE.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>README.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\README.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>SHA256SUMS.txt</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\SHA256SUMS.txt</code></td>
+<td class="align-left">—</td>
+</tr>
+</tbody></table></div>
+<h2 id="1-文档-docs">1. 文档（docs/）</h2>
+<p>共 20 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>docs/</code></td>
+<td class="align-right">20</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">仓库路径</th>
+<th class="align-left">本地路径</th>
+<th class="align-left">原项目路径</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>docs/00_项目梳理总览.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\00_项目梳理总览.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/00_项目梳理总览.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\00_项目梳理总览.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/01_拓扑与参数.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\01_拓扑与参数.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/01_拓扑与参数.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\01_拓扑与参数.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/02_论文精读_HOGA方法.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\02_论文精读_HOGA方法.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/02_论文精读_HOGA方法.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\02_论文精读_HOGA方法.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/03_三相LCC_HOGA实现.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\03_三相LCC_HOGA实现.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/03_三相LCC_HOGA实现.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\03_三相LCC_HOGA实现.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/04_模型对比结果.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\04_模型对比结果.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/04_模型对比结果.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\04_模型对比结果.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/05_归一化特性扫描.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\05_归一化特性扫描.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/05_归一化特性扫描.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\05_归一化特性扫描.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/06_充电轨迹_AOC.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\06_充电轨迹_AOC.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/06_充电轨迹_AOC.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\06_充电轨迹_AOC.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/07_局限与证据等级.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\07_局限与证据等级.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/07_局限与证据等级.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\07_局限与证据等级.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/08_文件与证据索引.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\08_文件与证据索引.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/08_文件与证据索引.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\08_文件与证据索引.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/09_GPT阅读指南.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\09_GPT阅读指南.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>docs/09_GPT阅读指南.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\docs\09_GPT阅读指南.md</code></td>
+<td class="align-left">—</td>
+</tr>
+</tbody></table></div>
+<h2 id="2-论文-paper">2. 论文（paper/）</h2>
+<p>共 3 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>paper/</code></td>
+<td class="align-right">3</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\paper</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">仓库路径</th>
+<th class="align-left">本地路径</th>
+<th class="align-left">原项目路径</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>paper/HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\paper\HOGA_TPEL2024_Li_Wang_Fang_Chen_Yang.pdf</code></td>
+<td class="align-left"><code>电容充电电源_参考文献/High-Order_Generalized_Averaging_Method_for_Power_Electronics_Modeling_from_DC_to_above_Half_the_Switching_Frequency.pdf</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>paper/README.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\paper\README.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>paper/README.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\paper\README.md</code></td>
+<td class="align-left">—</td>
+</tr>
+</tbody></table></div>
+<h2 id="3-数据-data">3. 数据（data/）</h2>
+<p>共 30 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>data/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\data</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>data/aoc/</code></td>
+<td class="align-right">5</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\data\aoc</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>data/comparison/</code></td>
+<td class="align-right">10</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\data\comparison</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>data/normalized/</code></td>
+<td class="align-right">13</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\data\normalized</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="4-精选图-figures">4. 精选图（figures/）</h2>
+<p>共 29 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>figures/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\figures</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>figures/accuracy/</code></td>
+<td class="align-right">6</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\figures\accuracy</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>figures/aoc/</code></td>
+<td class="align-right">4</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\figures\aoc</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>figures/comparison/</code></td>
+<td class="align-right">10</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\figures\comparison</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>figures/normalized/</code></td>
+<td class="align-right">7</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\figures\normalized</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="5-代码-code">5. 代码（code/）</h2>
+<p>共 63 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>code/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/accelerated/</code></td>
+<td class="align-right">1</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\accelerated</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/comparison/</code></td>
+<td class="align-right">8</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\comparison</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/core/</code></td>
+<td class="align-right">19</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\core</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/h49/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\h49</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/normalized/</code></td>
+<td class="align-right">13</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\normalized</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/plotting/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\plotting</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/matlab/verification/</code></td>
+<td class="align-right">12</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\matlab\verification</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>code/python/</code></td>
+<td class="align-right">4</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\code\python</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="6-模型-models">6. 模型（models/）</h2>
+<p>共 7 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>models/</code></td>
+<td class="align-right">7</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">仓库路径</th>
+<th class="align-left">本地路径</th>
+<th class="align-left">原项目路径</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>models/AOC_charge.slx</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\AOC_charge.slx</code></td>
+<td class="align-left"><code>model_comparison_HOGA_EDF_FHA/charging_trajectory_AOC_10point_validation/models/AOC_charge.slx</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>models/ideal_three_phase_LCC.slx</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\ideal_three_phase_LCC.slx</code></td>
+<td class="align-left"><code>MATLAB_PRJ/three_phase/simulink/ideal_three_phase_LCC.slx</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>models/lcc3_comparison.slx</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\lcc3_comparison.slx</code></td>
+<td class="align-left"><code>model_comparison_HOGA_EDF_FHA/05_verification/models/lcc3_comparison.slx</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>models/lcc3_frozen_aoc.slx</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\lcc3_frozen_aoc.slx</code></td>
+<td class="align-left"><code>model_comparison_HOGA_EDF_FHA/charging_trajectory_AOC_10point_validation/models/lcc3_frozen_aoc.slx</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>models/README.html</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\README.html</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>models/README.md</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\README.md</code></td>
+<td class="align-left">—</td>
+</tr>
+<tr>
+<td class="align-left"><code>models/three_phase_LCC.slx</code></td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\models\three_phase_LCC.slx</code></td>
+<td class="align-left"><code>MATLAB_PRJ/three_phase/simulink/three_phase_LCC.slx</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="7-报告归档-reports">7. 报告归档（reports/）</h2>
+<p>共 77 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>reports/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\reports</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/accuracy_figures/</code></td>
+<td class="align-right">45</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\reports\accuracy_figures</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/aoc/</code></td>
+<td class="align-right">6</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\reports\aoc</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/audit/</code></td>
+<td class="align-right">6</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\reports\audit</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/comparison/</code></td>
+<td class="align-right">6</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\reports\comparison</code></td>
+</tr>
+<tr>
+<td class="align-left"><code>reports/normalized/</code></td>
+<td class="align-right">12</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\reports\normalized</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="8-工具-tools">8. 工具（tools/）</h2>
+<p>共 2 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>tools/</code></td>
+<td class="align-right">2</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\tools</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="9-站点资源-assets">9. 站点资源（assets/）</h2>
+<p>共 1 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>assets/</code></td>
+<td class="align-right">1</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024\assets</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="10-生成的-html-页面">10. 生成的 HTML 页面</h2>
+<p>共 4 个文件。完整列表见 CSV；以下按目录汇总。</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th class="align-left">目录</th>
+<th class="align-right">文件数</th>
+<th class="align-left">本地目录</th>
+</tr></thead><tbody>
+<tr>
+<td class="align-left"><code>./</code></td>
+<td class="align-right">4</td>
+<td class="align-left"><code>E:\codex_prj\3_cap_power_supply\_github_three_phase_hoga_20261024</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="11-远程访问">11. 远程访问</h2>
+<ul>
+<li>仓库首页：https://github.com/sososoamazing/three-phase-lcc-hoga</li>
+<li>Pages 首页：https://sososoamazing.github.io/three-phase-lcc-hoga/</li>
+<li>Release zip：https://github.com/sososoamazing/three-phase-lcc-hoga/releases/tag/v1.0.0</li>
+</ul>
+<blockquote>注：<code>FILE_MANIFEST.csv</code> 与 <code>INVENTORY.md</code> 本身是 2026-10-25 新增的清单文件，不包含在自身的行中；<code>SHA256SUMS.txt</code> 会在清单生成后重新生成。</blockquote>
+</article>
+</main>
+<footer class="footer">
+  <p>公开归档 · 代码 MIT · 原创文档 CC BY 4.0 · 论文 PDF CC BY-NC-ND 4.0 ·
+  <a href="https://github.com/sososoamazing/three-phase-lcc-hoga">GitHub</a> ·
+  <a href="https://sososoamazing.github.io/three-phase-lcc-hoga/">Pages</a></p>
+  <p>最后构建：2026-10-25。本页由 <code>tools/build_site.py</code> 从 Markdown 生成；如与源文件冲突，以源文件为准。</p>
+</footer>
+</body>
+</html>
